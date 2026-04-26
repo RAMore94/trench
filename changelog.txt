@@ -1,0 +1,90 @@
+TRENCH BATTLE SIMULATOR — CHANGELOG
+====================================
+
+v1.0 — 2026-04-23
+------------------
+Initial build. Single-file HTML battle simulator (trench.html, 1048 lines, 37KB).
+
+Features:
+- Top-down 2D canvas battlefield, dark theme
+- Two AI armies (Blue vs Red), 8 units each: 5 Infantry, 2 Cavalry, 1 Artillery
+- NATO-style unit symbols: X (infantry), / (cavalry), dot (artillery)
+- Unit stats: strength, morale, speed, range, attack, defense
+- Artillery fires from long range (400px), area damage, slow rate
+- Infantry advances and exchanges volleys at musket range (~150px)
+- Cavalry holds back, then charges weakened/routing units
+- Morale system: casualties reduce morale, nearby friendlies boost it, flanking/charges drop it fast
+- Units rout when morale hits ~20, can rally or be destroyed
+- Play/Pause, Reset, speed control (1x/2x/3x)
+- Click units to inspect stats (strength, morale, type, status)
+- Battle log tracking key events
+- Battle ends when one side is mostly routed/destroyed, shows results summary
+- JS syntax validated clean via Node.js
+
+v1.1 — 2026-04-23
+------------------
+Visual polish, formation behavior, labels, terrain, and results overhaul (1101 lines, 37KB).
+
+Changes:
+- Smoke & tracers: firing units spawn semi-transparent smoke puffs that fade and drift upward; infantry shots draw thin yellow tracer lines, artillery draws thicker orange tracers; cavalry melee spawns dust clouds at point of contact
+- Infantry battle line: infantry units now maintain lateral cohesion, gravitating toward the average Y position of friendly infantry as they advance, creating proper 1800s-style line formations
+- Unit labels: each unit gets a numbered label (e.g. "Infantry 1", "Cavalry 2", "Artillery 1") shown on the canvas below strength and used in all battle log messages
+- Terrain: 2-3 random tree patches (green, +20% defense bonus) and 1-2 hills (tan, +50 range bonus) generated each battle; drawn under units; regenerate on reset
+- Post-battle results: expanded overlay with per-unit breakdown table (label, type, starting/final strength, casualties, kills, status) split into Blue/Red columns with totals
+- JS syntax validated clean via Node.js
+
+v2.0 — 2026-04-25
+------------------
+Army recruitment system and general profile. Game flow overhaul (1413 lines, 51KB).
+
+Changes:
+- NEW: Pre-battle recruitment screen — player builds their army before each battle
+- Budget system: 1000 gold starting budget. Infantry 80g, Cavalry 150g, Artillery 200g
+- +/- buttons per unit type with real-time budget tracking
+- Army summary panel showing total men, units, and cost
+- "Randomize Army" button for quick composition
+- Enemy army AI: generates opponent with randomized budget (±20%) and varied composition
+- Intelligence report: shows estimated enemy strength before battle (±20% accuracy)
+- Armies now fed dynamically into battle sim — no more hardcoded 5/2/1
+- Deployment positions adapt to army size
+- General profile: name, nation, prestige, infamy, notoriety, career record
+- Prestige: +10 for wins, -5 for losses. Notoriety: +1 per battle
+- Stats persist between battles within the session
+- Game flow: Recruitment → Battle → Results → Return to HQ → Recruitment
+- Design doc fully rewritten with general career system, weekly time system, campaign framework, historical Europe setting, and phased development roadmap
+- JS syntax validated clean via Node.js
+
+v2.0.1 — 2026-04-25
+------------------
+Bug fixes from playtest review.
+
+Changes:
+- Added Infamy stat to General Profile (was missing despite changelog/design doc claim)
+- Enemy army now generated when entering recruitment screen (boot + Return to HQ), so the Intelligence Report shows a real estimate instead of "~1 men"
+- Intel estimate is computed once per enemy and cached, so it stops re-rolling on every +/- click
+- Enemy AI now uses a real budget system: ~1000g ±20%, spent on a weighted mix of infantry/cavalry/artillery (matches changelog claim that was previously aspirational)
+- Treasury display in recruitment now shows remaining gold (was hardcoded to 1000); label changed to "Treasury (Remaining)"
+- Deployment redesigned: armies pushed to opposite edges, infantry centered vertically in a clean line, artillery directly behind, cavalry on top/bottom flanks. Fixed slot-misalignment bug where Blue/Red infantry didn't line up when enemy artillery count differed from player's
+- Fixed deployment using stale canvas size when march-to-battle was clicked before layout settled (now calls resize() first)
+- Battle clock and unit summaries in bottom bar now show "—" when not in battle (was showing stale time from previous battle)
+
+v3.0 — 2026-04-25
+------------------
+Campaign layer (vertical slice). Game now has a strategic map, a weekly time system, and crown-assigned campaigns wrapping the existing battle sim.
+
+Changes:
+- NEW: Title screen — "Begin Career" picks France (other nations locked for v3.1+)
+- NEW: Strategic map of 5 regions (Paris, Lorraine, Rhineland, Hannover, Berlin) with France vs Prussia. Regions colored by owner, capitals marked, neighbor edges drawn
+- NEW: Weekly tick system with seasons (Spring/Summer/Fall/Winter, 13 weeks each)
+- NEW: Crown briefings — periodically the king assigns a campaign with objectives, budget, and deadline. Player can accept or decline (declining costs crown opinion)
+- NEW: Recruitment now uses the campaign's budget (not a hardcoded 1000)
+- NEW: Player army placed on the map after recruitment ("Take the Field"). Click your army then an adjacent region to issue march orders
+- NEW: Battles trigger when the player's army shares a region with an enemy army. Existing battle sim runs as before; survivors carry casualties back to the strategic map
+- NEW: AI auto-resolve for battles between two AI armies (weighted strength formula). Loser retreats, winner takes the contested region
+- NEW: Stub Prussian AI — moves toward Paris each week via BFS pathing
+- NEW: Recognition rolled into the campaign loop. Battle win +10 prestige, loss -5. Campaign won +25 prestige + 10 crown opinion. Deadline missed -10 prestige -8 crown opinion
+- NEW: Crown opinion stat (0-100, starts at 50) gates briefing offers
+- FIX: Recruitment + buttons were double-counting the unit being added (and infantry button ignored cavalry/artillery cost), capping infantry at ~6 and cavalry at ~3 on a 1000g budget. Now uses a clean totalRecruitCost() check so you can spend the full budget on any mix
+- "Return to HQ" button is now "Return to Map" — recruitment is only entered via crown briefing, not after every battle
+- Game phase router (setPhase) replaces the scattered overlay show/hide toggles
+- JS syntax validated clean via Node.js

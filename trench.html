@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trench — Battle Simulator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#16213e;border-bottom:1px solid #0f3460;min-height:48px}
+#top-bar h1{font-size:18px;letter-spacing:3px;color:#e94560;text-transform:uppercase;font-weight:700}
+#controls{display:flex;gap:10px;align-items:center}
+#controls button{background:#0f3460;color:#e0e0e0;border:1px solid #e94560;padding:6px 16px;cursor:pointer;font-size:13px;border-radius:3px;transition:background .2s}
+#controls button:hover{background:#e94560;color:#fff}
+#controls button.active{background:#e94560;color:#fff}
+#controls button:disabled{opacity:0.5;cursor:not-allowed}
+#controls button:disabled:hover{background:#0f3460}
+#speed-label{font-size:12px;color:#888}
+#battle-status{font-size:13px;color:#e94560;font-weight:600}
+#main{display:flex;flex:1;overflow:hidden}
+#canvas-wrap{flex:1;position:relative;background:#0a0a1a}
+canvas{display:block;width:100%;height:100%}
+#sidebar{width:280px;background:#16213e;border-left:1px solid #0f3460;display:flex;flex-direction:column;overflow:hidden}
+#unit-info{padding:12px;border-bottom:1px solid #0f3460;min-height:140px}
+#unit-info h3{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+#unit-info .stat{font-size:12px;margin:3px 0;display:flex;justify-content:space-between}
+#unit-info .stat span:first-child{color:#888}
+#unit-info .bar-wrap{height:6px;background:#0a0a1a;border-radius:3px;margin-top:2px;overflow:hidden}
+#unit-info .bar{height:100%;border-radius:3px;transition:width .3s}
+#log-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#log-wrap h3{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;padding:12px 12px 6px}
+#log{flex:1;overflow-y:auto;padding:0 12px 12px;font-size:11px;line-height:1.6}
+#log div{border-bottom:1px solid #0f346033;padding:2px 0}
+#log .blue{color:#4fc3f7}
+#log .red{color:#ef5350}
+#log .event{color:#aaa}
+#bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;background:#16213e;border-top:1px solid #0f3460;font-size:12px;color:#666}
+.army-summary{display:flex;gap:16px}
+.army-summary .label{font-weight:600}
+#result-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.92);z-index:100;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto}
+#result-overlay.show{display:flex}
+#result-content{background:#16213e;border:1px solid #0f3460;border-radius:6px;padding:24px;max-width:900px;width:90%;max-height:90vh;overflow-y:auto}
+#result-overlay h2{font-size:36px;letter-spacing:4px;margin-bottom:16px;text-align:center}
+#result-overlay .winner-blue{color:#4fc3f7}
+#result-overlay .winner-red{color:#ef5350}
+#result-overlay .winner-draw{color:#888}
+#result-overlay p{font-size:14px;color:#aaa;margin:8px 0}
+#result-overlay button{margin-top:24px;background:#0f3460;color:#e0e0e0;border:1px solid #e94560;padding:10px 32px;cursor:pointer;font-size:14px;border-radius:3px}
+#result-overlay button:hover{background:#e94560;color:#fff}
+.result-section{margin-top:20px;border-top:1px solid #0f3460;padding-top:16px}
+.result-section h3{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.unit-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+.unit-table th{background:#0f3460;color:#4fc3f7;padding:6px;text-align:left;border-bottom:1px solid #0f3460}
+.unit-table td{padding:6px;border-bottom:1px solid #0f346033}
+.unit-table .blue-label{color:#4fc3f7}
+.unit-table .red-label{color:#ef5350}
+.unit-table .destroyed{color:#888}
+.army-tables{display:flex;gap:20px;margin-top:12px}
+.army-col{flex:1}
+.army-col h4{color:#4fc3f7;font-size:12px;margin-bottom:8px}
+.army-col.red h4{color:#ef5350}
+.stats-row{display:flex;justify-content:space-between;margin-top:8px;padding:8px;background:#0f3460;border-radius:3px}
+.stats-row .label{font-size:11px;color:#888}
+.stats-row .value{color:#e0e0e0;font-weight:600}
+#recruitment-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.95);z-index:200;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
+#recruitment-overlay.show{display:flex}
+#recruitment-content{background:#16213e;border:2px solid #0f3460;border-radius:8px;padding:32px;max-width:1200px;width:100%;max-height:90vh;overflow-y:auto}
+#recruitment-content h1{font-size:28px;letter-spacing:2px;color:#e94560;margin-bottom:24px;text-align:center}
+.recruitment-grid{display:grid;grid-template-columns:1fr 2fr;gap:32px;margin-bottom:32px}
+.general-profile{background:#0f3460;border:1px solid #0f3460;border-radius:6px;padding:16px}
+.general-profile h2{font-size:14px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.general-profile .profile-stat{font-size:13px;margin:8px 0;display:flex;justify-content:space-between}
+.general-profile .profile-stat .label{color:#888}
+.general-profile .profile-stat .value{color:#e94560;font-weight:600}
+.recruitment-main{display:flex;flex-direction:column;gap:16px}
+.budget-row{background:#0f3460;border:1px solid #e94560;border-radius:6px;padding:12px;display:flex;justify-content:space-between;align-items:center}
+.budget-row .budget-label{font-size:12px;color:#888;text-transform:uppercase}
+.budget-row .budget-value{font-size:18px;font-weight:700;color:#e94560}
+.unit-selector{background:#0f3460;border:1px solid #0f3460;border-radius:6px;padding:16px}
+.unit-selector h3{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.unit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.unit-card{background:#16213e;border:1px solid #0f3460;border-radius:4px;padding:12px;text-align:center}
+.unit-card h4{font-size:12px;color:#4fc3f7;margin-bottom:4px;font-weight:600}
+.unit-card .cost{font-size:11px;color:#e94560;margin:4px 0}
+.unit-card .stats{font-size:10px;color:#888;margin:4px 0;line-height:1.4}
+.unit-card .controls{display:flex;gap:6px;margin-top:8px;justify-content:center}
+.unit-card button{background:#0f3460;color:#e0e0e0;border:1px solid #e94560;padding:4px 8px;cursor:pointer;font-size:11px;border-radius:2px}
+.unit-card button:hover{background:#e94560;color:#fff}
+.unit-card .count{font-size:12px;font-weight:600;color:#e0e0e0;margin:4px 0}
+.army-summary-panel{background:#0f3460;border:1px solid #0f3460;border-radius:6px;padding:16px}
+.army-summary-panel h3{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.summary-item{font-size:12px;margin:6px 0;display:flex;justify-content:space-between}
+.summary-item .value{color:#4fc3f7;font-weight:600}
+.recruit-controls{display:flex;gap:12px;margin-top:16px}
+.recruit-controls button{flex:1;padding:12px 16px;font-size:14px;border-radius:4px;border:1px solid #e94560;cursor:pointer;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.recruit-controls button#btn-march-to-battle{background:#e94560;color:#fff}
+.recruit-controls button#btn-march-to-battle:hover:not(:disabled){background:#ff6b7a;color:#fff}
+.recruit-controls button#btn-march-to-battle:disabled{background:#444;border-color:#666;color:#666;cursor:not-allowed}
+.recruit-controls button#btn-randomize-army{background:#0f3460;color:#e0e0e0}
+.recruit-controls button#btn-randomize-army:hover{background:#1a3a5c}
+.enemy-intel{background:#0f3460;border:1px solid #0f3460;border-radius:6px;padding:16px;margin-top:16px}
+.enemy-intel h3{font-size:12px;color:#ef5350;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.enemy-intel .intel-item{font-size:12px;margin:6px 0;color:#aaa}
+#title-overlay{display:none;position:fixed;inset:0;background:#0a0a1a;z-index:300;flex-direction:column;align-items:center;justify-content:center}
+#title-overlay.show{display:flex}
+#title-overlay h1{font-size:96px;letter-spacing:24px;color:#e94560;font-weight:700;margin-bottom:8px}
+#title-overlay .tagline{font-size:14px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-bottom:48px}
+#title-overlay h2{font-size:14px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.nation-grid{display:flex;gap:12px;margin-bottom:32px}
+.nation-card{background:#16213e;border:2px solid #0f3460;border-radius:6px;padding:16px 24px;cursor:pointer;min-width:120px;text-align:center;transition:all .15s}
+.nation-card.locked{opacity:0.35;cursor:not-allowed}
+.nation-card.selected{border-color:#e94560;background:#1a3a5c}
+.nation-card .n-name{font-size:14px;color:#4fc3f7;font-weight:600;margin-bottom:4px}
+.nation-card .n-note{font-size:10px;color:#666}
+#title-overlay .begin{background:#e94560;color:#fff;border:none;padding:14px 48px;font-size:14px;letter-spacing:3px;cursor:pointer;border-radius:3px;text-transform:uppercase;font-weight:600}
+#title-overlay .begin:hover{background:#ff6b7a}
+#title-overlay .begin:disabled{background:#444;color:#888;cursor:not-allowed}
+#map-overlay{display:none;position:fixed;inset:0;background:#0a0a1a;z-index:150;flex-direction:column}
+#map-overlay.show{display:flex}
+#map-hud{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#16213e;border-bottom:1px solid #0f3460}
+#map-hud .left,#map-hud .right{display:flex;gap:18px;align-items:center}
+#map-hud .hud-item{font-size:12px;color:#aaa}
+#map-hud .hud-item .v{color:#e94560;font-weight:600;margin-left:4px}
+#map-hud button{background:#0f3460;color:#e0e0e0;border:1px solid #e94560;padding:6px 14px;cursor:pointer;font-size:12px;border-radius:3px}
+#map-hud button:hover{background:#e94560;color:#fff}
+#map-canvas-wrap{flex:1;position:relative;background:#0a0a1a}
+#map-canvas{display:block;width:100%;height:100%}
+#map-tooltip{position:absolute;background:#16213e;border:1px solid #e94560;border-radius:4px;padding:8px 12px;font-size:11px;color:#e0e0e0;pointer-events:none;display:none;z-index:10;line-height:1.5}
+#map-tooltip.show{display:block}
+#map-bottom{padding:8px 20px;background:#16213e;border-top:1px solid #0f3460;font-size:12px;color:#888;display:flex;justify-content:space-between;align-items:center;min-height:40px}
+#map-bottom #campaign-status{color:#4fc3f7}
+#map-bottom #map-instructions{color:#666;font-size:11px}
+#briefing-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,26,.92);z-index:250;align-items:center;justify-content:center}
+#briefing-overlay.show{display:flex}
+#briefing-content{background:#16213e;border:2px solid #e94560;border-radius:8px;padding:32px;max-width:560px;width:90%}
+#briefing-content h2{font-size:14px;color:#888;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+#briefing-content h1{font-size:24px;color:#e94560;margin-bottom:18px;letter-spacing:1px}
+#briefing-content .body p{font-size:13px;color:#ccc;line-height:1.6;margin-bottom:10px}
+#briefing-content .terms{background:#0f3460;border-radius:4px;padding:12px;margin:18px 0}
+#briefing-content .terms .row{display:flex;justify-content:space-between;font-size:12px;margin:5px 0}
+#briefing-content .terms .row .lbl{color:#888}
+#briefing-content .terms .row .val{color:#4fc3f7;font-weight:600}
+#briefing-content .actions{display:flex;gap:12px;margin-top:18px}
+#briefing-content .actions button{flex:1;padding:12px;font-size:13px;border-radius:4px;cursor:pointer;text-transform:uppercase;letter-spacing:2px;font-weight:600;border:1px solid #e94560}
+#briefing-content .actions .accept{background:#e94560;color:#fff}
+#briefing-content .actions .accept:hover{background:#ff6b7a}
+#briefing-content .actions .decline{background:#0f3460;color:#aaa}
+#briefing-content .actions .decline:hover{background:#1a3a5c;color:#fff}
+</style>
+</head>
+<body>
+<div id="top-bar">
+  <h1>Trench</h1>
+  <div id="controls">
+    <button id="btn-start" style="display:none">Start Battle</button>
+    <button id="btn-pause" style="display:none">Pause</button>
+    <span id="speed-label" style="display:none">Speed:</span>
+    <button class="spd active" data-spd="1" style="display:none">1x</button>
+    <button class="spd" data-spd="2" style="display:none">2x</button>
+    <button class="spd" data-spd="3" style="display:none">3x</button>
+  </div>
+  <div id="battle-status">Recruiting...</div>
+</div>
+<div id="main">
+  <div id="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div id="sidebar">
+    <div id="unit-info"><h3>Unit Info</h3><p style="font-size:12px;color:#555">Hover or click a unit</p></div>
+    <div id="log-wrap"><h3>Battle Log</h3><div id="log"></div></div>
+  </div>
+</div>
+<div id="bottom-bar">
+  <div class="army-summary"><span class="label" style="color:#4fc3f7">Blue:</span><span id="blue-summary">—</span></div>
+  <div id="time-display">0:00</div>
+  <div class="army-summary"><span class="label" style="color:#ef5350">Red:</span><span id="red-summary">—</span></div>
+</div>
+
+<div id="title-overlay" class="show">
+  <h1>TRENCH</h1>
+  <div class="tagline">A General's Career — 1700</div>
+  <h2>Choose Your Nation</h2>
+  <div class="nation-grid">
+    <div class="nation-card selected" data-nation="france"><div class="n-name">France</div><div class="n-note">Strong central army</div></div>
+    <div class="nation-card locked"><div class="n-name">Britain</div><div class="n-note">v3.1+</div></div>
+    <div class="nation-card locked"><div class="n-name">Prussia</div><div class="n-note">v3.1+</div></div>
+    <div class="nation-card locked"><div class="n-name">Austria</div><div class="n-note">v3.1+</div></div>
+  </div>
+  <button class="begin" id="btn-begin-career">Begin Career</button>
+</div>
+
+<div id="map-overlay">
+  <div id="map-hud">
+    <div class="left">
+      <div class="hud-item">Year<span class="v" id="hud-year">1700</span></div>
+      <div class="hud-item">Week<span class="v" id="hud-week">1</span></div>
+      <div class="hud-item">Season<span class="v" id="hud-season">Spring</span></div>
+    </div>
+    <div class="right">
+      <div class="hud-item">Prestige<span class="v" id="hud-prestige">0</span></div>
+      <div class="hud-item">Crown Opinion<span class="v" id="hud-crown">50</span></div>
+      <button id="btn-end-week">End Week ▶</button>
+    </div>
+  </div>
+  <div id="map-canvas-wrap">
+    <canvas id="map-canvas"></canvas>
+    <div id="map-tooltip"></div>
+  </div>
+  <div id="map-bottom">
+    <div id="campaign-status">No active campaign.</div>
+    <div id="map-instructions">Click your army, then click an adjacent region to issue march orders.</div>
+  </div>
+</div>
+
+<div id="briefing-overlay">
+  <div id="briefing-content">
+    <h2>Crown Briefing</h2>
+    <h1 id="briefing-title">Campaign</h1>
+    <div class="body" id="briefing-body"></div>
+    <div class="terms" id="briefing-terms"></div>
+    <div class="actions">
+      <button class="decline" id="btn-decline-campaign">Decline</button>
+      <button class="accept" id="btn-accept-campaign">Accept Command</button>
+    </div>
+  </div>
+</div>
+
+<div id="recruitment-overlay">
+  <div id="recruitment-content">
+    <h1>Officers' Quarters</h1>
+    <div class="recruitment-grid">
+      <div class="general-profile">
+        <h2>General Profile</h2>
+        <div class="profile-stat">
+          <span class="label">Name</span>
+          <span class="value" id="general-name">General</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Nation</span>
+          <span class="value" id="general-nation">France</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Prestige</span>
+          <span class="value" id="general-prestige">0</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Infamy</span>
+          <span class="value" id="general-infamy">0</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Notoriety</span>
+          <span class="value" id="general-notoriety">0</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Battles</span>
+          <span class="value" id="general-battles">0</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Wins</span>
+          <span class="value" id="general-wins">0</span>
+        </div>
+        <div class="profile-stat">
+          <span class="label">Losses</span>
+          <span class="value" id="general-losses">0</span>
+        </div>
+      </div>
+      <div class="recruitment-main">
+        <div class="budget-row">
+          <span class="budget-label">Treasury (Remaining)</span>
+          <span class="budget-value" id="budget-display">1000</span>
+        </div>
+        <div class="unit-selector">
+          <h3>Infantry Battalion</h3>
+          <div class="unit-grid">
+            <div class="unit-card">
+              <h4>Infantry</h4>
+              <div class="cost">80 gold</div>
+              <div class="stats">100 men<br>Muskets incl.</div>
+              <div class="count" id="inf-count">0</div>
+              <div class="controls">
+                <button id="btn-inf-minus">-</button>
+                <button id="btn-inf-plus">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-selector">
+          <h3>Cavalry Squadron</h3>
+          <div class="unit-grid">
+            <div class="unit-card">
+              <h4>Cavalry</h4>
+              <div class="cost">150 gold</div>
+              <div class="stats">50 men<br>Horses incl.</div>
+              <div class="count" id="cav-count">0</div>
+              <div class="controls">
+                <button id="btn-cav-minus">-</button>
+                <button id="btn-cav-plus">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-selector">
+          <h3>Artillery Battery</h3>
+          <div class="unit-grid">
+            <div class="unit-card">
+              <h4>Artillery</h4>
+              <div class="cost">200 gold</div>
+              <div class="stats">30 men<br>4 Cannons</div>
+              <div class="count" id="art-count">0</div>
+              <div class="controls">
+                <button id="btn-art-minus">-</button>
+                <button id="btn-art-plus">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="army-summary-panel">
+          <h3>Army Summary</h3>
+          <div class="summary-item">
+            <span>Total Men</span>
+            <span class="value" id="total-men">0</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Units</span>
+            <span class="value" id="total-units">0</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Cost</span>
+            <span class="value" id="total-cost">0</span>
+          </div>
+          <div class="summary-item">
+            <span>Budget Remaining</span>
+            <span class="value" id="remaining">1000</span>
+          </div>
+        </div>
+        <div class="enemy-intel" id="enemy-intel" style="display:none">
+          <h3>Enemy Intelligence Report</h3>
+          <div class="intel-item" id="enemy-estimate">Awaiting scout reports...</div>
+        </div>
+        <div class="recruit-controls">
+          <button id="btn-randomize-army">Randomize Army</button>
+          <button id="btn-march-to-battle" disabled>Take the Field</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="result-overlay">
+  <div id="result-content">
+    <h2 id="result-title">Victory</h2>
+    <p id="result-detail"></p>
+    <div id="result-tables"></div>
+    <div style="text-align:center;margin-top:20px">
+      <button id="btn-return-hq">Return to Map</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var canvas = document.getElementById("cv");
+var ctx = canvas.getContext("2d");
+var W, H;
+
+var SIM_STATE = "recruiting"; // recruiting, running, paused, ended
+var simSpeed = 1;
+var simTime = 0;
+var units = [];
+var projectiles = [];
+var particles = [];
+var terrain = [];
+var logEntries = [];
+var hoveredUnit = null;
+var selectedUnit = null;
+var battleStartTime = 0;
+
+// General profile state (persists across battles)
+var GENERAL = {
+  name: "General",
+  nation: "France",
+  prestige: 0,
+  infamy: 0,
+  notoriety: 0,
+  battles: 0,
+  wins: 0,
+  losses: 0
+};
+
+// Recruitment state
+var RECRUITMENT = {
+  budget: 1000,
+  infantry: 0,
+  cavalry: 0,
+  artillery: 0
+};
+
+var ENEMY_ARMY = {
+  infantry: 0,
+  cavalry: 0,
+  artillery: 0,
+  budget: 0,
+  spent: 0,
+  intelEstimate: 0
+};
+
+// --- Campaign / strategic state (v3.0) ---
+var G = {
+  phase: "title",
+  week: 1,
+  year: 1700,
+  season: "Spring",
+  nations: [],
+  regions: [],
+  armies: [],
+  generals: [],
+  campaigns: [],
+  player: null,
+  selectedArmyId: null,
+  pendingBriefing: null,
+  nextId: 1,
+  pendingBattle: null,
+  log: []
+};
+
+function nextId() { return G.nextId++; }
+
+function seedWorld() {
+  G.nations = [
+    { id: "france",  name: "France",  color: "#4fc3f7", capital: "paris",  treasury: 5000, manpower: 8000, atWarWith: ["prussia"] },
+    { id: "prussia", name: "Prussia", color: "#ef5350", capital: "berlin", treasury: 4000, manpower: 6000, atWarWith: ["france"] }
+  ];
+
+  G.regions = [
+    { id: "paris",     name: "Paris",     owner: "france",  neighbors: ["lorraine"],            x: 180, y: 360, terrain: "plains",   isCapital: true },
+    { id: "lorraine",  name: "Lorraine",  owner: "france",  neighbors: ["paris", "rhineland"],  x: 360, y: 320, terrain: "plains",   isCapital: false },
+    { id: "rhineland", name: "Rhineland", owner: null,      neighbors: ["lorraine", "hannover"],x: 540, y: 280, terrain: "forest",   isCapital: false },
+    { id: "hannover",  name: "Hannover",  owner: "prussia", neighbors: ["rhineland", "berlin"], x: 700, y: 240, terrain: "plains",   isCapital: false },
+    { id: "berlin",    name: "Berlin",    owner: "prussia", neighbors: ["hannover"],            x: 880, y: 200, terrain: "plains",   isCapital: true }
+  ];
+
+  var playerGen = {
+    id: nextId(), nation: "france", name: "Gen. de Bourbon",
+    prestige: 0, infamy: 0, notoriety: 0, crownOpinion: 50,
+    isPlayer: true
+  };
+  var aiGen = {
+    id: nextId(), nation: "prussia", name: "Gen. von Steiner",
+    prestige: 0, infamy: 0, notoriety: 0, crownOpinion: 50,
+    isPlayer: false
+  };
+  G.generals = [playerGen, aiGen];
+  G.player = playerGen.id;
+
+  G.armies = [
+    { id: nextId(), nation: "prussia", generalId: aiGen.id, regionId: "hannover",
+      composition: { infantry: 4, cavalry: 2, artillery: 1 }, moveOrder: null }
+  ];
+
+  G.campaigns = [];
+  G.week = 1;
+  G.year = 1700;
+  G.season = "Spring";
+  G.pendingBriefing = null;
+  G.selectedArmyId = null;
+
+  // Seed GENERAL display from player
+  GENERAL.name = playerGen.name;
+  GENERAL.nation = "France";
+  GENERAL.prestige = playerGen.prestige;
+  GENERAL.infamy = playerGen.infamy;
+  GENERAL.notoriety = playerGen.notoriety;
+}
+
+function playerGeneral() {
+  for (var i = 0; i < G.generals.length; i++) {
+    if (G.generals[i].id === G.player) return G.generals[i];
+  }
+  return null;
+}
+
+function playerArmy() {
+  for (var i = 0; i < G.armies.length; i++) {
+    if (G.armies[i].generalId === G.player) return G.armies[i];
+  }
+  return null;
+}
+
+function regionById(id) {
+  for (var i = 0; i < G.regions.length; i++) if (G.regions[i].id === id) return G.regions[i];
+  return null;
+}
+
+function activeCampaign() {
+  for (var i = 0; i < G.campaigns.length; i++) {
+    if (G.campaigns[i].generalId === G.player && G.campaigns[i].status === "active") return G.campaigns[i];
+  }
+  return null;
+}
+
+function logEvent(msg) {
+  G.log.push({ week: G.week, year: G.year, msg: msg });
+  if (G.log.length > 80) G.log.shift();
+}
+
+// --- Constants ---
+var UNIT_W = 36, UNIT_H = 24;
+var DEPLOY_MARGIN_X = 80;
+
+var UNIT_DEFS = {
+  infantry: { strength: 100, speed: 40, range: 150, attack: 8, defense: 6, morale: 80, fireRate: 1.5, label: "Infantry", cost: 80 },
+  cavalry:  { strength: 50,  speed: 90, range: 30,  attack: 14, defense: 4, morale: 70, fireRate: 0, label: "Cavalry", cost: 150 },
+  artillery:{ strength: 30,  speed: 10, range: 450, attack: 20, defense: 2, morale: 60, fireRate: 0.25, label: "Artillery", cost: 200 }
+};
+
+// --- Utility ---
+function dist(a, b) { var dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx*dx + dy*dy); }
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function randRange(lo, hi) { return lo + Math.random() * (hi - lo); }
+
+// --- Particle effects ---
+function spawnSmoke(x, y) {
+  particles.push({
+    x: x, y: y,
+    vx: randRange(-5, 5), vy: -20,
+    life: 0.5,
+    maxLife: 0.5,
+    type: "smoke"
+  });
+}
+
+function spawnDustCloud(x, y) {
+  for (var i = 0; i < 4; i++) {
+    particles.push({
+      x: x + randRange(-10, 10), y: y + randRange(-10, 10),
+      vx: randRange(-15, 15), vy: randRange(-30, -10),
+      life: 0.4,
+      maxLife: 0.4,
+      type: "dust"
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (var i = particles.length - 1; i >= 0; i--) {
+    var p = particles[i];
+    p.life -= dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 5 * dt;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+// --- Terrain generation ---
+function generateTerrain() {
+  terrain = [];
+  var treeCount = 2 + Math.floor(Math.random() * 2);
+  for (var i = 0; i < treeCount; i++) {
+    terrain.push({
+      type: "trees",
+      x: randRange(W * 0.25, W * 0.75),
+      y: randRange(H * 0.2, H * 0.8),
+      radius: randRange(40, 70)
+    });
+  }
+  var hillCount = 1 + Math.floor(Math.random() * 2);
+  for (var i = 0; i < hillCount; i++) {
+    terrain.push({
+      type: "hill",
+      x: randRange(W * 0.2, W * 0.8),
+      y: randRange(H * 0.25, H * 0.75),
+      radius: randRange(50, 100)
+    });
+  }
+}
+
+function unitInTerrain(unit, terrainObj) {
+  var d = dist(unit, terrainObj);
+  return d < terrainObj.radius;
+}
+
+// --- Init ---
+function resize() {
+  var wrap = document.getElementById("canvas-wrap");
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+
+function createUnit(team, type, x, y, id, typeIndex) {
+  var def = UNIT_DEFS[type];
+  var typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+  var label = typeLabel + " " + (typeIndex + 1);
+
+  return {
+    id: id,
+    team: team,
+    type: type,
+    label: label,
+    x: x, y: y,
+    targetX: x, targetY: y,
+    strength: def.strength,
+    maxStrength: def.strength,
+    morale: def.morale,
+    maxMorale: def.morale,
+    speed: def.speed,
+    range: def.range,
+    attack: def.attack,
+    defense: def.defense,
+    fireRate: def.fireRate,
+    fireCooldown: 0,
+    state: "idle",
+    routTimer: 0,
+    rallyTimer: 0,
+    engagedTarget: null,
+    chargeTarget: null,
+    cavalryWaitTimer: 0,
+    flashTimer: 0,
+    killCount: 0,
+    initialStrength: def.strength
+  };
+}
+
+function deployArmies() {
+  units = [];
+  projectiles = [];
+  particles = [];
+  logEntries = [];
+  simTime = 0;
+  var id = 0;
+
+  function deploySide(team, frontX, backX, comp) {
+    var infCount = comp.infantry, cavCount = comp.cavalry, artCount = comp.artillery;
+    var midY = H / 2;
+
+    var infSpacing = Math.min(50, (H - 200) / Math.max(infCount, 1));
+    var infStart = midY - (infCount - 1) * infSpacing / 2;
+    var infIdx = 0;
+    for (var i = 0; i < infCount; i++) {
+      units.push(createUnit(team, "infantry", frontX, infStart + i * infSpacing, id++, infIdx++));
+    }
+
+    var artSpacing = Math.min(80, (H - 100) / Math.max(artCount, 1));
+    var artStart = midY - (artCount - 1) * artSpacing / 2;
+    var artIdx = 0;
+    for (var i = 0; i < artCount; i++) {
+      units.push(createUnit(team, "artillery", backX, artStart + i * artSpacing, id++, artIdx++));
+    }
+
+    var cavIdx = 0;
+    for (var i = 0; i < cavCount; i++) {
+      var topHalf = i % 2 === 0;
+      var rank = Math.floor(i / 2);
+      var cavY = topHalf ? 40 + rank * 36 : H - 40 - rank * 36;
+      units.push(createUnit(team, "cavalry", frontX, cavY, id++, cavIdx++));
+    }
+  }
+
+  var blueFrontX = DEPLOY_MARGIN_X;
+  var blueBackX = Math.max(20, DEPLOY_MARGIN_X - 50);
+  var redFrontX = W - DEPLOY_MARGIN_X;
+  var redBackX = Math.min(W - 20, W - DEPLOY_MARGIN_X + 50);
+
+  deploySide("blue", blueFrontX, blueBackX, RECRUITMENT);
+  deploySide("red", redFrontX, redBackX, ENEMY_ARMY);
+
+  generateTerrain();
+}
+
+// --- Logging ---
+function addLog(msg, cls) {
+  logEntries.push({ msg: msg, cls: cls || "event", time: simTime });
+  var logEl = document.getElementById("log");
+  var d = document.createElement("div");
+  d.className = cls || "event";
+  d.textContent = formatTime(simTime) + " " + msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function formatTime(t) {
+  var m = Math.floor(t / 60);
+  var s = Math.floor(t % 60);
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+// --- Find targets ---
+function getEnemies(team) {
+  return units.filter(function(u) { return u.team !== team && u.state !== "destroyed"; });
+}
+
+function getAllies(team) {
+  return units.filter(function(u) { return u.team === team && u.state !== "destroyed"; });
+}
+
+function getInfantryAllies(unit) {
+  return units.filter(function(u) { return u.team === unit.team && u.type === "infantry" && u.state !== "destroyed"; });
+}
+
+function nearestEnemy(unit) {
+  var enemies = getEnemies(unit.team);
+  var best = null, bestD = Infinity;
+  for (var i = 0; i < enemies.length; i++) {
+    var d = dist(unit, enemies[i]);
+    if (d < bestD) { bestD = d; best = enemies[i]; }
+  }
+  return best;
+}
+
+function largestEnemy(unit) {
+  var enemies = getEnemies(unit.team);
+  var best = null, bestStr = 0;
+  for (var i = 0; i < enemies.length; i++) {
+    if (enemies[i].strength > bestStr) { bestStr = enemies[i].strength; best = enemies[i]; }
+  }
+  return best;
+}
+
+function nearbyAllies(unit, radius) {
+  var allies = getAllies(unit.team);
+  var count = 0;
+  for (var i = 0; i < allies.length; i++) {
+    if (allies[i].id !== unit.id && dist(unit, allies[i]) < radius) count++;
+  }
+  return count;
+}
+
+function weakestEnemyInRange(unit, maxRange) {
+  var enemies = getEnemies(unit.team);
+  var best = null, bestMorale = Infinity;
+  for (var i = 0; i < enemies.length; i++) {
+    var e = enemies[i];
+    var d = dist(unit, e);
+    if (d < maxRange && (e.morale < bestMorale || (e.state === "routing" && bestMorale > 10))) {
+      bestMorale = e.morale;
+      best = e;
+    }
+  }
+  return best;
+}
+
+// --- Combat ---
+function dealDamage(attacker, target, dmg, isArea) {
+  var effectiveDmg = Math.max(1, dmg - target.defense * 0.3);
+
+  for (var i = 0; i < terrain.length; i++) {
+    if (terrain[i].type === "trees" && unitInTerrain(target, terrain[i])) {
+      effectiveDmg *= 0.8;
+    }
+  }
+
+  if (isArea) effectiveDmg *= 0.7;
+  var casualties = Math.min(target.strength, Math.round(effectiveDmg * randRange(0.6, 1.4)));
+  target.strength -= casualties;
+  target.morale -= casualties * 0.5;
+  target.flashTimer = 0.15;
+  attacker.killCount += casualties;
+
+  var behindThreshold = (target.team === "blue") ? (attacker.x < target.x) : (attacker.x > target.x);
+  if (behindThreshold) {
+    target.morale -= 5;
+  }
+
+  if (target.strength <= 0) {
+    target.strength = 0;
+    target.state = "destroyed";
+    addLog(target.team.charAt(0).toUpperCase() + target.team.slice(1) + " " + target.label + " destroyed!", target.team);
+  }
+}
+
+function fireProjectile(from, to, dmg) {
+  spawnSmoke(from.x, from.y);
+
+  projectiles.push({
+    x: from.x, y: from.y,
+    tx: to.x + randRange(-15, 15), ty: to.y + randRange(-15, 15),
+    speed: 300,
+    dmg: dmg,
+    target: to,
+    from: from,
+    isArtillery: from.type === "artillery",
+    life: 2,
+    startX: from.x,
+    startY: from.y
+  });
+}
+
+// --- AI ---
+function updateAI(unit, dt) {
+  if (unit.state === "destroyed") return;
+  if (unit.state === "routing") {
+    updateRouting(unit, dt);
+    return;
+  }
+
+  var allyCount = nearbyAllies(unit, 120);
+  unit.morale += allyCount * 0.3 * dt;
+  unit.morale = clamp(unit.morale, 0, unit.maxMorale);
+
+  if (unit.morale <= 15 && unit.state !== "routing") {
+    unit.state = "routing";
+    unit.routTimer = 0;
+    addLog(unit.team.charAt(0).toUpperCase() + unit.team.slice(1) + " " + unit.label + " is routing!", unit.team);
+    return;
+  }
+
+  var enemy = nearestEnemy(unit);
+  if (!enemy) return;
+  var d = dist(unit, enemy);
+
+  if (unit.type === "artillery") {
+    updateArtillery(unit, dt, enemy, d);
+  } else if (unit.type === "infantry") {
+    updateInfantry(unit, dt, enemy, d);
+  } else if (unit.type === "cavalry") {
+    updateCavalry(unit, dt, enemy, d);
+  }
+}
+
+function updateArtillery(unit, dt, enemy, d) {
+  var target = largestEnemy(unit) || enemy;
+  var td = dist(unit, target);
+
+  var rangeBonus = 0;
+  for (var i = 0; i < terrain.length; i++) {
+    if (terrain[i].type === "hill" && unitInTerrain(unit, terrain[i])) {
+      rangeBonus = 50;
+      break;
+    }
+  }
+
+  if (td <= unit.range + rangeBonus) {
+    unit.state = "firing";
+    unit.fireCooldown -= dt;
+    if (unit.fireCooldown <= 0) {
+      unit.fireCooldown = 1 / unit.fireRate;
+      fireProjectile(unit, target, unit.attack);
+      var enemies = getEnemies(unit.team);
+      for (var i = 0; i < enemies.length; i++) {
+        if (enemies[i].id !== target.id && dist(target, enemies[i]) < 50) {
+          dealDamage(unit, enemies[i], unit.attack * 0.3, true);
+        }
+      }
+    }
+  } else {
+    moveToward(unit, target.x, target.y, dt, 0.3);
+    unit.state = "advancing";
+  }
+}
+
+function updateInfantry(unit, dt, enemy, d) {
+  var infantryAllies = getInfantryAllies(unit);
+  var avgY = 0;
+  for (var i = 0; i < infantryAllies.length; i++) {
+    avgY += infantryAllies[i].y;
+  }
+  avgY /= infantryAllies.length;
+
+  var lineGravity = 0.1;
+  var yDiff = avgY - unit.y;
+  if (Math.abs(yDiff) > 30) {
+    unit.targetY = lerp(unit.targetY, avgY, lineGravity);
+  }
+
+  var minSpeed = 1;
+  for (var i = 0; i < infantryAllies.length; i++) {
+    if (infantryAllies[i].id !== unit.id && infantryAllies[i].state !== "idle") {
+      minSpeed = Math.min(minSpeed, 0.3);
+    }
+  }
+
+  if (d <= unit.range) {
+    unit.state = "firing";
+    unit.fireCooldown -= dt;
+    if (unit.fireCooldown <= 0) {
+      unit.fireCooldown = 1 / unit.fireRate;
+      fireProjectile(unit, enemy, unit.attack);
+    }
+    if (d > 60) {
+      moveToward(unit, enemy.x, unit.targetY, dt, 0.15);
+    }
+  } else {
+    unit.state = "advancing";
+    moveToward(unit, enemy.x, unit.targetY, dt, minSpeed);
+  }
+}
+
+function updateCavalry(unit, dt, enemy, d) {
+  unit.cavalryWaitTimer += dt;
+
+  if (unit.cavalryWaitTimer < 8 && !unit.chargeTarget) {
+    unit.state = "idle";
+    return;
+  }
+
+  var weakTarget = weakestEnemyInRange(unit, 600);
+  var artilleryTarget = null;
+  var enemies = getEnemies(unit.team);
+  for (var i = 0; i < enemies.length; i++) {
+    if (enemies[i].type === "artillery" && enemies[i].state !== "destroyed") {
+      artilleryTarget = enemies[i];
+      break;
+    }
+  }
+
+  var chargeTarget = null;
+  if (weakTarget && (weakTarget.state === "routing" || weakTarget.morale < 30)) {
+    chargeTarget = weakTarget;
+  } else if (artilleryTarget && dist(unit, artilleryTarget) < 500) {
+    chargeTarget = artilleryTarget;
+  } else if (weakTarget) {
+    chargeTarget = weakTarget;
+  } else {
+    chargeTarget = enemy;
+  }
+
+  unit.chargeTarget = chargeTarget;
+  var cd = dist(unit, chargeTarget);
+
+  if (cd <= 40) {
+    unit.state = "charging";
+    unit.fireCooldown -= dt;
+    if (unit.fireCooldown <= 0) {
+      unit.fireCooldown = 0.5;
+      spawnDustCloud(unit.x, unit.y);
+      var chargeMult = (chargeTarget.state === "routing" || chargeTarget.type === "artillery") ? 2.0 : 1.2;
+      chargeTarget.morale -= 8;
+      dealDamage(unit, chargeTarget, unit.attack * chargeMult, false);
+      if (chargeTarget.type === "infantry" && chargeTarget.state !== "routing" && chargeTarget.morale > 30) {
+        dealDamage(chargeTarget, unit, chargeTarget.attack * 0.6, false);
+      }
+    }
+  } else {
+    unit.state = "charging";
+    moveToward(unit, chargeTarget.x, chargeTarget.y, dt, 1);
+  }
+}
+
+function updateRouting(unit, dt) {
+  unit.routTimer += dt;
+  var fleeX = unit.team === "blue" ? -100 : W + 100;
+  moveToward(unit, fleeX, unit.y + randRange(-20, 20), dt, 1.2);
+
+  var allyCount = nearbyAllies(unit, 100);
+  unit.morale += (allyCount * 0.8 + 0.2) * dt;
+  if (unit.morale > 35 && unit.routTimer > 3) {
+    unit.state = "idle";
+    unit.routTimer = 0;
+    addLog(unit.team.charAt(0).toUpperCase() + unit.team.slice(1) + " " + unit.label + " rallied!", unit.team);
+  }
+
+  if (unit.x < -50 || unit.x > W + 50) {
+    unit.state = "destroyed";
+    unit.strength = 0;
+    addLog(unit.team.charAt(0).toUpperCase() + unit.team.slice(1) + " " + unit.label + " fled the field!", unit.team);
+  }
+}
+
+function moveToward(unit, tx, ty, dt, speedMult) {
+  var dx = tx - unit.x;
+  var dy = ty - unit.y;
+  var d = Math.sqrt(dx * dx + dy * dy);
+  if (d < 1) return;
+  var s = unit.speed * (speedMult || 1) * dt;
+  if (s > d) s = d;
+  unit.x += (dx / d) * s;
+  unit.y += (dy / d) * s;
+  unit.x = clamp(unit.x, 10, W - 10);
+  unit.y = clamp(unit.y, 10, H - 10);
+}
+
+// --- Projectiles ---
+function updateProjectiles(dt) {
+  for (var i = projectiles.length - 1; i >= 0; i--) {
+    var p = projectiles[i];
+    var dx = p.tx - p.x;
+    var dy = p.ty - p.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    var s = p.speed * dt;
+    if (d < s || p.life <= 0) {
+      if (p.target && p.target.state !== "destroyed") {
+        dealDamage(p.from, p.target, p.dmg, p.isArtillery);
+      }
+      projectiles.splice(i, 1);
+    } else {
+      p.x += (dx / d) * s;
+      p.y += (dy / d) * s;
+      p.life -= dt;
+    }
+  }
+}
+
+// --- Check victory ---
+function checkVictory() {
+  var blueAlive = units.filter(function(u) { return u.team === "blue" && u.state !== "destroyed"; });
+  var redAlive = units.filter(function(u) { return u.team === "red" && u.state !== "destroyed"; });
+  var blueRouting = blueAlive.filter(function(u) { return u.state === "routing"; });
+  var redRouting = redAlive.filter(function(u) { return u.state === "routing"; });
+
+  var blueDefeated = blueAlive.length === 0 || (blueAlive.length === blueRouting.length && blueAlive.length > 0);
+  var redDefeated = redAlive.length === 0 || (redAlive.length === redRouting.length && redAlive.length > 0);
+
+  if (blueDefeated || redDefeated) {
+    SIM_STATE = "ended";
+    var winner = "draw";
+    if (blueDefeated && !redDefeated) winner = "red";
+    if (redDefeated && !blueDefeated) winner = "blue";
+    updateGeneralStats(winner);
+    if (G.pendingBattle) syncBattleResultToCampaign(winner);
+    showResult(winner);
+  }
+}
+
+function updateGeneralStats(winner) {
+  GENERAL.battles++;
+  GENERAL.notoriety += 1;
+  if (winner === "blue") {
+    GENERAL.wins++;
+    GENERAL.prestige += 10;
+  } else if (winner === "red") {
+    GENERAL.losses++;
+    GENERAL.prestige = Math.max(0, GENERAL.prestige - 5);
+  } else {
+    GENERAL.prestige += 2;
+  }
+  updateGeneralDisplay();
+}
+
+function showResult(winner) {
+  var overlay = document.getElementById("result-overlay");
+  var title = document.getElementById("result-title");
+  var detail = document.getElementById("result-detail");
+  var tablesDiv = document.getElementById("result-tables");
+
+  overlay.classList.add("show");
+
+  if (winner === "draw") {
+    title.textContent = "DRAW";
+    title.className = "winner-draw";
+  } else {
+    title.textContent = winner.toUpperCase() + " VICTORY";
+    title.className = "winner-" + winner;
+  }
+
+  var blueStr = 0, redStr = 0, blueMax = 0, redMax = 0, blueCas = 0, redCas = 0, blueKills = 0, redKills = 0;
+  var blueUnits = [], redUnits = [];
+
+  for (var i = 0; i < units.length; i++) {
+    var u = units[i];
+    var casualties = u.initialStrength - u.strength;
+
+    if (u.team === "blue") {
+      blueStr += u.strength;
+      blueMax += u.maxStrength;
+      blueCas += casualties;
+      blueKills += u.killCount;
+      blueUnits.push(u);
+    } else {
+      redStr += u.strength;
+      redMax += u.maxStrength;
+      redCas += casualties;
+      redKills += u.killCount;
+      redUnits.push(u);
+    }
+  }
+
+  detail.textContent = "Battle duration: " + formatTime(simTime) + "  |  Blue casualties: " + blueCas + "  |  Red casualties: " + redCas;
+
+  var html = '<div class="result-section"><h3>Unit Breakdown</h3><div class="army-tables">';
+
+  html += '<div class="army-col"><h4>Blue Army</h4><table class="unit-table"><thead><tr><th>Unit</th><th>Type</th><th>Start</th><th>Final</th><th>Casualties</th><th>Kills</th><th>Status</th></tr></thead><tbody>';
+  for (var i = 0; i < blueUnits.length; i++) {
+    var u = blueUnits[i];
+    var cas = u.initialStrength - u.strength;
+    var status = u.state === "destroyed" ? "Destroyed" : u.state === "routing" ? "Routed" : "Survived";
+    var statusClass = u.state === "destroyed" ? "destroyed" : u.state === "routing" ? "red-label" : "blue-label";
+    html += '<tr><td class="blue-label">' + u.label + '</td><td>' + (u.type.charAt(0).toUpperCase() + u.type.slice(1)) + '</td><td>' + u.initialStrength + '</td><td>' + u.strength + '</td><td>' + cas + '</td><td>' + u.killCount + '</td><td class="' + statusClass + '">' + status + '</td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  html += '<div class="army-col red"><h4>Red Army</h4><table class="unit-table"><thead><tr><th>Unit</th><th>Type</th><th>Start</th><th>Final</th><th>Casualties</th><th>Kills</th><th>Status</th></tr></thead><tbody>';
+  for (var i = 0; i < redUnits.length; i++) {
+    var u = redUnits[i];
+    var cas = u.initialStrength - u.strength;
+    var status = u.state === "destroyed" ? "Destroyed" : u.state === "routing" ? "Routed" : "Survived";
+    var statusClass = u.state === "destroyed" ? "destroyed" : u.state === "routing" ? "red-label" : "red-label";
+    html += '<tr><td class="red-label">' + u.label + '</td><td>' + (u.type.charAt(0).toUpperCase() + u.type.slice(1)) + '</td><td>' + u.initialStrength + '</td><td>' + u.strength + '</td><td>' + cas + '</td><td>' + u.killCount + '</td><td class="' + statusClass + '">' + status + '</td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  html += '</div>';
+
+  html += '<div class="stats-row"><div class="label">Blue Total Casualties</div><div class="value">' + blueCas + '</div></div>';
+  html += '<div class="stats-row"><div class="label">Red Total Casualties</div><div class="value">' + redCas + '</div></div>';
+  html += '<div class="stats-row"><div class="label">Blue Kills</div><div class="value">' + blueKills + '</div></div>';
+  html += '<div class="stats-row"><div class="label">Red Kills</div><div class="value">' + redKills + '</div></div>';
+
+  html += '</div>';
+  tablesDiv.innerHTML = html;
+}
+
+// --- Drawing ---
+function draw() {
+  ctx.fillStyle = "#0d1117";
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = "#1a2233";
+  ctx.lineWidth = 1;
+  for (var gx = 0; gx < W; gx += 80) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+  }
+  for (var gy = 0; gy < H; gy += 80) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  }
+
+  ctx.strokeStyle = "#1a2233";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (var i = 0; i < terrain.length; i++) {
+    drawTerrain(terrain[i]);
+  }
+
+  var infoUnit = selectedUnit || hoveredUnit;
+  if (infoUnit && infoUnit.state !== "destroyed") {
+    ctx.strokeStyle = infoUnit.team === "blue" ? "rgba(79,195,247,0.15)" : "rgba(239,83,80,0.15)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(infoUnit.x, infoUnit.y, infoUnit.range, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  for (var i = 0; i < projectiles.length; i++) {
+    drawProjectile(projectiles[i]);
+  }
+
+  for (var i = 0; i < units.length; i++) {
+    drawUnit(units[i]);
+  }
+
+  for (var i = 0; i < particles.length; i++) {
+    drawParticle(particles[i]);
+  }
+}
+
+function drawTerrain(t) {
+  if (t.type === "trees") {
+    ctx.fillStyle = "rgba(76, 175, 80, 0.2)";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(76, 175, 80, 0.4)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(76, 175, 80, 0.3)";
+    for (var i = 0; i < 6; i++) {
+      var angle = (Math.PI * 2 / 6) * i;
+      var tx = t.x + Math.cos(angle) * (t.radius * 0.5);
+      var ty = t.y + Math.sin(angle) * (t.radius * 0.5);
+      ctx.beginPath();
+      ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (t.type === "hill") {
+    ctx.fillStyle = "rgba(200, 180, 100, 0.15)";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(200, 180, 100, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function drawProjectile(p) {
+  var lifeRatio = p.life / 2;
+
+  if (p.isArtillery) {
+    ctx.strokeStyle = "rgba(255, 138, 101, " + (lifeRatio * 0.6) + ")";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    var midX = (p.startX + p.tx) / 2;
+    var midY = (p.startY + p.ty) / 2 - 100;
+    ctx.quadraticCurveTo(midX, midY, p.x, p.y);
+    ctx.stroke();
+
+    ctx.fillStyle = "#ff8a65";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = "rgba(255, 235, 59, " + (lifeRatio * 0.8) + ")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(p.startX, p.startY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffeb3b";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawParticle(p) {
+  var ratio = p.life / p.maxLife;
+
+  if (p.type === "smoke") {
+    ctx.fillStyle = "rgba(120, 120, 120, " + (ratio * 0.4) + ")";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 8 + (1 - ratio) * 4, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (p.type === "dust") {
+    ctx.fillStyle = "rgba(150, 100, 60, " + (ratio * 0.3) + ")";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6 + (1 - ratio) * 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawUnit(u) {
+  if (u.state === "destroyed") return;
+
+  var strRatio = u.strength / u.maxStrength;
+  var w = UNIT_W * (0.5 + 0.5 * strRatio);
+  var h = UNIT_H * (0.5 + 0.5 * strRatio);
+
+  var flash = u.flashTimer > 0;
+
+  var baseColor, borderColor, symbolColor;
+  if (u.team === "blue") {
+    baseColor = flash ? "#fff" : (u.state === "routing" ? "#1a3a5c" : "#1565c0");
+    borderColor = "#4fc3f7";
+    symbolColor = "#4fc3f7";
+  } else {
+    baseColor = flash ? "#fff" : (u.state === "routing" ? "#5c1a1a" : "#c62828");
+    borderColor = "#ef5350";
+    symbolColor = "#ef5350";
+  }
+
+  ctx.save();
+  ctx.translate(u.x, u.y);
+
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(-w / 2 + 2, -h / 2 + 2, w, h);
+
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+
+  ctx.strokeStyle = symbolColor;
+  ctx.lineWidth = 2;
+  if (u.type === "infantry") {
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 3, -h / 2 + 3);
+    ctx.lineTo(w / 2 - 3, h / 2 - 3);
+    ctx.moveTo(w / 2 - 3, -h / 2 + 3);
+    ctx.lineTo(-w / 2 + 3, h / 2 - 3);
+    ctx.stroke();
+  } else if (u.type === "cavalry") {
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 3, h / 2 - 3);
+    ctx.lineTo(w / 2 - 3, -h / 2 + 3);
+    ctx.stroke();
+  } else if (u.type === "artillery") {
+    ctx.fillStyle = symbolColor;
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.min(w, h) * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  var barW = w;
+  var barH = 3;
+  var barY = -h / 2 - 6;
+  ctx.fillStyle = "#333";
+  ctx.fillRect(-barW / 2, barY, barW, barH);
+  var moraleRatio = clamp(u.morale / u.maxMorale, 0, 1);
+  var moraleColor = moraleRatio > 0.5 ? "#4caf50" : moraleRatio > 0.25 ? "#ff9800" : "#f44336";
+  ctx.fillStyle = moraleColor;
+  ctx.fillRect(-barW / 2, barY, barW * moraleRatio, barH);
+
+  ctx.fillStyle = "#aaa";
+  ctx.font = "9px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(u.strength + "", 0, h / 2 + 11);
+
+  ctx.fillStyle = "#666";
+  ctx.font = "7px monospace";
+  ctx.fillText(u.label, 0, h / 2 + 20);
+
+  if (u.state === "routing") {
+    ctx.fillStyle = "#ff5252";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("ROUT", 0, -h / 2 - 10);
+  }
+
+  ctx.restore();
+
+  if (u === hoveredUnit || u === selectedUnit) {
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(u.x - w / 2 - 3, u.y - h / 2 - 3, w + 6, h + 6);
+  }
+}
+
+// --- Unit info panel ---
+function updateInfoPanel() {
+  var u = selectedUnit || hoveredUnit;
+  var panel = document.getElementById("unit-info");
+  if (!u || u.state === "destroyed") {
+    panel.innerHTML = '<h3>Unit Info</h3><p style="font-size:12px;color:#555">Hover or click a unit</p>';
+    return;
+  }
+
+  var teamColor = u.team === "blue" ? "#4fc3f7" : "#ef5350";
+  var moraleRatio = clamp(u.morale / u.maxMorale, 0, 1);
+  var moraleColor = moraleRatio > 0.5 ? "#4caf50" : moraleRatio > 0.25 ? "#ff9800" : "#f44336";
+  var strRatio = u.strength / u.maxStrength;
+  var strColor = strRatio > 0.5 ? "#4caf50" : strRatio > 0.25 ? "#ff9800" : "#f44336";
+
+  panel.innerHTML =
+    '<h3 style="color:' + teamColor + '">' + u.team.toUpperCase() + " " + u.label + '</h3>' +
+    '<div class="stat"><span>State</span><span style="color:' + (u.state === "routing" ? "#f44336" : "#4caf50") + '">' + u.state.toUpperCase() + '</span></div>' +
+    '<div class="stat"><span>Strength</span><span>' + u.strength + ' / ' + u.maxStrength + '</span></div>' +
+    '<div class="bar-wrap"><div class="bar" style="width:' + (strRatio * 100) + '%;background:' + strColor + '"></div></div>' +
+    '<div class="stat"><span>Morale</span><span>' + Math.round(u.morale) + ' / ' + u.maxMorale + '</span></div>' +
+    '<div class="bar-wrap"><div class="bar" style="width:' + (moraleRatio * 100) + '%;background:' + moraleColor + '"></div></div>' +
+    '<div class="stat"><span>Attack</span><span>' + u.attack + '</span></div>' +
+    '<div class="stat"><span>Defense</span><span>' + u.defense + '</span></div>' +
+    '<div class="stat"><span>Range</span><span>' + u.range + '</span></div>' +
+    '<div class="stat"><span>Speed</span><span>' + u.speed + '</span></div>' +
+    '<div class="stat"><span>Kills</span><span>' + u.killCount + '</span></div>';
+}
+
+function updateSummaries() {
+  if (units.length === 0) {
+    document.getElementById("blue-summary").textContent = "—";
+    document.getElementById("red-summary").textContent = "—";
+    document.getElementById("time-display").textContent = "—";
+    return;
+  }
+  var blueAlive = 0, blueMen = 0, redAlive = 0, redMen = 0;
+  for (var i = 0; i < units.length; i++) {
+    var u = units[i];
+    if (u.state !== "destroyed") {
+      if (u.team === "blue") { blueAlive++; blueMen += u.strength; }
+      else { redAlive++; redMen += u.strength; }
+    }
+  }
+  document.getElementById("blue-summary").textContent = blueAlive + " units, " + blueMen + " men";
+  document.getElementById("red-summary").textContent = redAlive + " units, " + redMen + " men";
+  document.getElementById("time-display").textContent = formatTime(simTime);
+}
+
+// --- Mouse ---
+function getUnitAt(mx, my) {
+  for (var i = units.length - 1; i >= 0; i--) {
+    var u = units[i];
+    if (u.state === "destroyed") continue;
+    var strRatio = u.strength / u.maxStrength;
+    var w = UNIT_W * (0.5 + 0.5 * strRatio);
+    var h = UNIT_H * (0.5 + 0.5 * strRatio);
+    if (mx >= u.x - w / 2 - 4 && mx <= u.x + w / 2 + 4 && my >= u.y - h / 2 - 4 && my <= u.y + h / 2 + 4) {
+      return u;
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener("mousemove", function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var mx = (e.clientX - rect.left) * (W / rect.width);
+  var my = (e.clientY - rect.top) * (H / rect.height);
+  hoveredUnit = getUnitAt(mx, my);
+});
+
+canvas.addEventListener("click", function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var mx = (e.clientX - rect.left) * (W / rect.width);
+  var my = (e.clientY - rect.top) * (H / rect.height);
+  selectedUnit = getUnitAt(mx, my);
+});
+
+// --- Recruitment UI ---
+function updateRecruitmentUI() {
+  var totalCost = RECRUITMENT.infantry * 80 + RECRUITMENT.cavalry * 150 + RECRUITMENT.artillery * 200;
+  var remaining = RECRUITMENT.budget - totalCost;
+  var totalUnits = RECRUITMENT.infantry + RECRUITMENT.cavalry + RECRUITMENT.artillery;
+  var totalMen = RECRUITMENT.infantry * 100 + RECRUITMENT.cavalry * 50 + RECRUITMENT.artillery * 30;
+
+  document.getElementById("inf-count").textContent = RECRUITMENT.infantry;
+  document.getElementById("cav-count").textContent = RECRUITMENT.cavalry;
+  document.getElementById("art-count").textContent = RECRUITMENT.artillery;
+
+  document.getElementById("budget-display").textContent = remaining;
+  document.getElementById("total-men").textContent = totalMen;
+  document.getElementById("total-units").textContent = totalUnits;
+  document.getElementById("total-cost").textContent = totalCost;
+  document.getElementById("remaining").textContent = remaining;
+
+  var marchBtn = document.getElementById("btn-march-to-battle");
+  marchBtn.disabled = totalUnits === 0;
+
+  var intelEl = document.getElementById("enemy-intel");
+  intelEl.style.display = "block";
+  document.getElementById("enemy-estimate").textContent = "Estimated enemy strength: ~" + ENEMY_ARMY.intelEstimate + " men. Composition unknown.";
+}
+
+function updateGeneralDisplay() {
+  document.getElementById("general-name").textContent = GENERAL.name;
+  document.getElementById("general-nation").textContent = GENERAL.nation;
+  document.getElementById("general-prestige").textContent = GENERAL.prestige;
+  document.getElementById("general-infamy").textContent = GENERAL.infamy;
+  document.getElementById("general-notoriety").textContent = GENERAL.notoriety;
+  document.getElementById("general-battles").textContent = GENERAL.battles;
+  document.getElementById("general-wins").textContent = GENERAL.wins;
+  document.getElementById("general-losses").textContent = GENERAL.losses;
+}
+
+function generateEnemyArmy() {
+  var budget = Math.round(1000 * (0.8 + Math.random() * 0.4));
+  ENEMY_ARMY.budget = budget;
+  ENEMY_ARMY.infantry = 1;
+  ENEMY_ARMY.cavalry = 0;
+  ENEMY_ARMY.artillery = 0;
+
+  var spent = 80;
+  var attempts = 0;
+  while (spent < budget && attempts < 50) {
+    attempts++;
+    var r = Math.random();
+    if (r < 0.55 && spent + 80 <= budget) {
+      ENEMY_ARMY.infantry++;
+      spent += 80;
+    } else if (r < 0.85 && spent + 150 <= budget) {
+      ENEMY_ARMY.cavalry++;
+      spent += 150;
+    } else if (spent + 200 <= budget) {
+      ENEMY_ARMY.artillery++;
+      spent += 200;
+    } else if (spent + 80 <= budget) {
+      ENEMY_ARMY.infantry++;
+      spent += 80;
+    } else {
+      break;
+    }
+  }
+
+  ENEMY_ARMY.spent = spent;
+  var actualMen = ENEMY_ARMY.infantry * 100 + ENEMY_ARMY.cavalry * 50 + ENEMY_ARMY.artillery * 30;
+  ENEMY_ARMY.intelEstimate = Math.max(1, Math.round(actualMen * (0.8 + Math.random() * 0.4)));
+}
+
+// --- Controls ---
+function totalRecruitCost() {
+  return RECRUITMENT.infantry * 80 + RECRUITMENT.cavalry * 150 + RECRUITMENT.artillery * 200;
+}
+
+document.getElementById("btn-inf-plus").addEventListener("click", function() {
+  if (totalRecruitCost() + 80 <= RECRUITMENT.budget) RECRUITMENT.infantry++;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-inf-minus").addEventListener("click", function() {
+  if (RECRUITMENT.infantry > 0) RECRUITMENT.infantry--;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-cav-plus").addEventListener("click", function() {
+  if (totalRecruitCost() + 150 <= RECRUITMENT.budget) RECRUITMENT.cavalry++;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-cav-minus").addEventListener("click", function() {
+  if (RECRUITMENT.cavalry > 0) RECRUITMENT.cavalry--;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-art-plus").addEventListener("click", function() {
+  if (totalRecruitCost() + 200 <= RECRUITMENT.budget) RECRUITMENT.artillery++;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-art-minus").addEventListener("click", function() {
+  if (RECRUITMENT.artillery > 0) RECRUITMENT.artillery--;
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-randomize-army").addEventListener("click", function() {
+  var budget = RECRUITMENT.budget;
+  RECRUITMENT.infantry = 1 + Math.floor(Math.random() * Math.min(8, Math.floor(budget / 200)));
+  RECRUITMENT.cavalry = Math.floor(Math.random() * Math.min(4, Math.floor(budget / 400)));
+  RECRUITMENT.artillery = Math.floor(Math.random() * Math.min(3, Math.floor(budget / 500)));
+  while (totalRecruitCost() > budget) {
+    if (RECRUITMENT.artillery > 0) RECRUITMENT.artillery--;
+    else if (RECRUITMENT.cavalry > 0) RECRUITMENT.cavalry--;
+    else if (RECRUITMENT.infantry > 1) RECRUITMENT.infantry--;
+    else break;
+  }
+  updateRecruitmentUI();
+});
+
+document.getElementById("btn-march-to-battle").addEventListener("click", function() {
+  if (RECRUITMENT.infantry + RECRUITMENT.cavalry + RECRUITMENT.artillery === 0) return;
+  takeTheField();
+});
+
+document.getElementById("btn-start").addEventListener("click", function() {
+  if (SIM_STATE === "idle") {
+    SIM_STATE = "running";
+    this.style.display = "none";
+    document.getElementById("btn-pause").style.display = "";
+    document.getElementById("battle-status").textContent = "Battle in progress...";
+    addLog("Battle commenced!", "event");
+  }
+});
+
+document.getElementById("btn-pause").addEventListener("click", function() {
+  if (SIM_STATE === "running") {
+    SIM_STATE = "paused";
+    this.textContent = "Resume";
+    document.getElementById("battle-status").textContent = "Paused";
+  } else if (SIM_STATE === "paused") {
+    SIM_STATE = "running";
+    this.textContent = "Pause";
+    document.getElementById("battle-status").textContent = "Battle in progress...";
+  }
+});
+
+document.querySelectorAll(".spd").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    simSpeed = parseInt(this.dataset.spd);
+    document.querySelectorAll(".spd").forEach(function(b) { b.classList.remove("active"); });
+    this.classList.add("active");
+  });
+});
+
+document.getElementById("btn-return-hq").addEventListener("click", function() {
+  document.getElementById("btn-pause").textContent = "Pause";
+  document.getElementById("log").innerHTML = "";
+  units = [];
+  simTime = 0;
+  SIM_STATE = "recruiting";
+  setPhase("map");
+});
+
+// --- Phase router ---
+function setPhase(phase) {
+  G.phase = phase;
+  document.getElementById("title-overlay").classList.remove("show");
+  document.getElementById("map-overlay").classList.remove("show");
+  document.getElementById("briefing-overlay").classList.remove("show");
+  document.getElementById("recruitment-overlay").classList.remove("show");
+  document.getElementById("result-overlay").classList.remove("show");
+  document.getElementById("btn-start").style.display = "none";
+  document.getElementById("btn-pause").style.display = "none";
+  document.getElementById("speed-label").style.display = "none";
+  document.querySelectorAll(".spd").forEach(function(b) { b.style.display = "none"; });
+
+  if (phase === "title") {
+    document.getElementById("title-overlay").classList.add("show");
+  } else if (phase === "map") {
+    document.getElementById("map-overlay").classList.add("show");
+    document.getElementById("battle-status").textContent = "Strategic Map";
+    sizeMapCanvas();
+    refreshMapHUD();
+    drawMap();
+  } else if (phase === "briefing") {
+    document.getElementById("map-overlay").classList.add("show");
+    sizeMapCanvas();
+    drawMap();
+    showBriefing();
+  } else if (phase === "recruitment") {
+    document.getElementById("recruitment-overlay").classList.add("show");
+    document.getElementById("battle-status").textContent = "Recruiting...";
+    updateRecruitmentUI();
+  } else if (phase === "battle") {
+    document.getElementById("speed-label").style.display = "";
+    document.querySelectorAll(".spd").forEach(function(b) { b.style.display = ""; });
+    document.getElementById("btn-start").style.display = "";
+    document.getElementById("battle-status").textContent = "Awaiting orders...";
+    SIM_STATE = "idle";
+    resize();
+    deployArmies();
+  } else if (phase === "results") {
+    document.getElementById("result-overlay").classList.add("show");
+  }
+}
+
+// --- Map rendering ---
+var mapCanvas, mapCtx, MW, MH;
+function sizeMapCanvas() {
+  if (!mapCanvas) {
+    mapCanvas = document.getElementById("map-canvas");
+    mapCtx = mapCanvas.getContext("2d");
+    mapCanvas.addEventListener("click", onMapClick);
+  }
+  var wrap = document.getElementById("map-canvas-wrap");
+  MW = wrap.clientWidth;
+  MH = wrap.clientHeight;
+  mapCanvas.width = MW;
+  mapCanvas.height = MH;
+}
+
+function regionScreenPos(r) {
+  return { x: (r.x / 1000) * MW, y: (r.y / 600) * MH };
+}
+
+function regionAtPoint(mx, my) {
+  for (var i = 0; i < G.regions.length; i++) {
+    var p = regionScreenPos(G.regions[i]);
+    var d = Math.sqrt((mx - p.x) * (mx - p.x) + (my - p.y) * (my - p.y));
+    if (d < 36) return G.regions[i];
+  }
+  return null;
+}
+
+function nationColor(nationId) {
+  for (var i = 0; i < G.nations.length; i++) {
+    if (G.nations[i].id === nationId) return G.nations[i].color;
+  }
+  return "#666";
+}
+
+function totalArmyMen(army) {
+  return army.composition.infantry * 100 + army.composition.cavalry * 50 + army.composition.artillery * 30;
+}
+
+function drawMap() {
+  if (!mapCtx) return;
+  mapCtx.fillStyle = "#0d1117";
+  mapCtx.fillRect(0, 0, MW, MH);
+
+  // Edges
+  mapCtx.strokeStyle = "#2a3245";
+  mapCtx.lineWidth = 2;
+  for (var i = 0; i < G.regions.length; i++) {
+    var r = G.regions[i];
+    var p1 = regionScreenPos(r);
+    for (var j = 0; j < r.neighbors.length; j++) {
+      var n = regionById(r.neighbors[j]);
+      if (!n) continue;
+      var p2 = regionScreenPos(n);
+      mapCtx.beginPath();
+      mapCtx.moveTo(p1.x, p1.y);
+      mapCtx.lineTo(p2.x, p2.y);
+      mapCtx.stroke();
+    }
+  }
+
+  var ac = activeCampaign();
+
+  // Regions
+  for (var i = 0; i < G.regions.length; i++) {
+    var r = G.regions[i];
+    var p = regionScreenPos(r);
+    var color = r.owner ? nationColor(r.owner) : "#666";
+    mapCtx.fillStyle = color + "33";
+    mapCtx.strokeStyle = color;
+    mapCtx.lineWidth = 2;
+    mapCtx.beginPath();
+    mapCtx.arc(p.x, p.y, 32, 0, Math.PI * 2);
+    mapCtx.fill();
+    mapCtx.stroke();
+
+    if (ac) {
+      for (var k = 0; k < ac.objectiveRegions.length; k++) {
+        if (ac.objectiveRegions[k] === r.id) {
+          mapCtx.strokeStyle = "#ffeb3b";
+          mapCtx.lineWidth = 2;
+          mapCtx.setLineDash([5, 5]);
+          mapCtx.beginPath();
+          mapCtx.arc(p.x, p.y, 40, 0, Math.PI * 2);
+          mapCtx.stroke();
+          mapCtx.setLineDash([]);
+        }
+      }
+    }
+
+    if (r.isCapital) {
+      mapCtx.fillStyle = color;
+      mapCtx.beginPath();
+      mapCtx.moveTo(p.x, p.y - 6);
+      mapCtx.lineTo(p.x + 6, p.y + 5);
+      mapCtx.lineTo(p.x - 6, p.y + 5);
+      mapCtx.closePath();
+      mapCtx.fill();
+    }
+
+    mapCtx.fillStyle = "#e0e0e0";
+    mapCtx.font = "13px 'Segoe UI', sans-serif";
+    mapCtx.textAlign = "center";
+    mapCtx.fillText(r.name, p.x, p.y + 56);
+  }
+
+  // Armies
+  for (var i = 0; i < G.armies.length; i++) {
+    var a = G.armies[i];
+    var r = regionById(a.regionId);
+    if (!r) continue;
+    var p = regionScreenPos(r);
+    var ox = a.nation === "france" ? -14 : 14;
+    var color = nationColor(a.nation);
+    var isPlayer = a.generalId === G.player;
+    var selected = isPlayer && G.selectedArmyId === a.id;
+
+    if (a.moveOrder) {
+      var dest = regionById(a.moveOrder);
+      if (dest) {
+        var dp = regionScreenPos(dest);
+        mapCtx.strokeStyle = isPlayer ? "#ffeb3b" : "#888";
+        mapCtx.lineWidth = 2;
+        mapCtx.setLineDash([4, 4]);
+        mapCtx.beginPath();
+        mapCtx.moveTo(p.x + ox, p.y - 14);
+        mapCtx.lineTo(dp.x, dp.y);
+        mapCtx.stroke();
+        mapCtx.setLineDash([]);
+      }
+    }
+
+    mapCtx.fillStyle = color;
+    mapCtx.strokeStyle = selected ? "#fff" : "#0a0a1a";
+    mapCtx.lineWidth = selected ? 3 : 1.5;
+    mapCtx.beginPath();
+    mapCtx.arc(p.x + ox, p.y - 14, 13, 0, Math.PI * 2);
+    mapCtx.fill();
+    mapCtx.stroke();
+
+    mapCtx.fillStyle = "#fff";
+    mapCtx.font = "bold 9px monospace";
+    mapCtx.textAlign = "center";
+    mapCtx.fillText(totalArmyMen(a), p.x + ox, p.y - 11);
+  }
+}
+
+function refreshMapHUD() {
+  document.getElementById("hud-year").textContent = G.year;
+  document.getElementById("hud-week").textContent = G.week;
+  document.getElementById("hud-season").textContent = G.season;
+  var pg = playerGeneral();
+  document.getElementById("hud-prestige").textContent = pg ? pg.prestige : 0;
+  document.getElementById("hud-crown").textContent = pg ? pg.crownOpinion : 0;
+  var ac = activeCampaign();
+  var status = "No active campaign. The crown will assign one in time.";
+  if (ac) {
+    var objNames = ac.objectiveRegions.map(function(rid){ return regionById(rid).name; }).join(", ");
+    status = "Campaign: take " + objNames + "  (" + ac.deadline + " weeks remaining)";
+  }
+  document.getElementById("campaign-status").textContent = status;
+}
+
+function onMapClick(e) {
+  if (G.phase !== "map") return;
+  var rect = mapCanvas.getBoundingClientRect();
+  var mx = (e.clientX - rect.left) * (MW / rect.width);
+  var my = (e.clientY - rect.top) * (MH / rect.height);
+
+  var clicked = regionAtPoint(mx, my);
+  if (!clicked) {
+    G.selectedArmyId = null;
+    drawMap();
+    return;
+  }
+
+  var pa = playerArmy();
+  if (!pa) { drawMap(); return; }
+
+  if (G.selectedArmyId === pa.id) {
+    var current = regionById(pa.regionId);
+    if (clicked.id === pa.regionId) {
+      pa.moveOrder = null;
+      logEvent("Holding at " + clicked.name);
+    } else if (current && current.neighbors.indexOf(clicked.id) !== -1) {
+      pa.moveOrder = clicked.id;
+      logEvent("March order: " + clicked.name);
+    }
+    G.selectedArmyId = null;
+  } else if (clicked.id === pa.regionId) {
+    G.selectedArmyId = pa.id;
+  } else {
+    G.selectedArmyId = null;
+  }
+  drawMap();
+}
+
+// --- Weekly tick ---
+function endWeek() {
+  if (G.pendingBriefing) { showBriefing(); return; }
+
+  G.week++;
+  if (G.week > 52) { G.week = 1; G.year++; }
+  if (G.week <= 13) G.season = "Spring";
+  else if (G.week <= 26) G.season = "Summer";
+  else if (G.week <= 39) G.season = "Fall";
+  else G.season = "Winter";
+
+  // Snapshot starting regions for transit-collision detection
+  var startRegion = {};
+  for (var i = 0; i < G.armies.length; i++) startRegion[G.armies[i].id] = G.armies[i].regionId;
+
+  // Compute next region for each army (player + AI in one pass)
+  var nextRegion = {};
+  for (var i = 0; i < G.armies.length; i++) {
+    var a = G.armies[i];
+    if (a.generalId === G.player) {
+      if (a.moveOrder && a.moveOrder !== a.regionId) {
+        var current = regionById(a.regionId);
+        nextRegion[a.id] = (current && current.neighbors.indexOf(a.moveOrder) !== -1) ? a.moveOrder : a.regionId;
+      } else {
+        nextRegion[a.id] = a.regionId;
+      }
+      a.moveOrder = null;
+    } else {
+      nextRegion[a.id] = aiNextRegion(a);
+    }
+  }
+
+  // Apply moves
+  for (var i = 0; i < G.armies.length; i++) G.armies[i].regionId = nextRegion[G.armies[i].id];
+
+  // Detect collisions: same end region OR swap (passed through each other)
+  var battlePending = null;
+  for (var i = 0; i < G.armies.length && !battlePending; i++) {
+    for (var j = i + 1; j < G.armies.length; j++) {
+      var a = G.armies[i], b = G.armies[j];
+      if (a.nation === b.nation) continue;
+      var sameEnd = a.regionId === b.regionId;
+      var swapped = startRegion[a.id] === b.regionId && startRegion[b.id] === a.regionId;
+      if (!sameEnd && !swapped) continue;
+      // If they swapped, place both in the player's destination (or a's region) for the battle
+      if (swapped) {
+        var aIsPlayer = a.generalId === G.player;
+        var meetRegion = aIsPlayer ? a.regionId : b.regionId;
+        a.regionId = meetRegion;
+        b.regionId = meetRegion;
+      }
+      var aIsPlayer = a.generalId === G.player;
+      var bIsPlayer = b.generalId === G.player;
+      if (aIsPlayer || bIsPlayer) {
+        battlePending = { player: aIsPlayer ? a : b, enemy: aIsPlayer ? b : a, region: regionById(a.regionId) };
+        break;
+      } else {
+        autoResolve(a, b);
+      }
+    }
+  }
+
+  // Campaign progress
+  var ac = activeCampaign();
+  if (ac) {
+    ac.deadline--;
+    var allHeld = true;
+    for (var k = 0; k < ac.objectiveRegions.length; k++) {
+      var r = regionById(ac.objectiveRegions[k]);
+      if (!r || r.owner !== "france") { allHeld = false; break; }
+    }
+    if (allHeld) {
+      ac.status = "won";
+      var pg = playerGeneral();
+      pg.prestige += 25;
+      pg.notoriety += 5;
+      pg.crownOpinion = Math.min(100, pg.crownOpinion + 10);
+      logEvent("Campaign succeeded!");
+    } else if (ac.deadline <= 0) {
+      ac.status = "lost";
+      var pg2 = playerGeneral();
+      pg2.prestige = Math.max(0, pg2.prestige - 10);
+      pg2.crownOpinion = Math.max(0, pg2.crownOpinion - 8);
+      logEvent("Campaign deadline missed.");
+      // Remove stranded player army
+      var pa = playerArmy();
+      if (pa) removeArmy(pa);
+    }
+  }
+
+  // Maybe issue a new briefing
+  if (!activeCampaign() && !G.pendingBriefing) {
+    var pg3 = playerGeneral();
+    if (pg3 && pg3.crownOpinion >= 20 && Math.random() < 0.5) {
+      G.pendingBriefing = generateBriefing();
+    }
+  }
+
+  // Sync to GENERAL display globals
+  var pg4 = playerGeneral();
+  if (pg4) {
+    GENERAL.prestige = pg4.prestige;
+    GENERAL.infamy = pg4.infamy;
+    GENERAL.notoriety = pg4.notoriety;
+  }
+
+  if (battlePending) { triggerBattle(battlePending); return; }
+  if (G.pendingBriefing) { showBriefing(); refreshMapHUD(); drawMap(); return; }
+
+  refreshMapHUD();
+  drawMap();
+}
+
+function aiNextRegion(army) {
+  var current = regionById(army.regionId);
+  if (!current) return army.regionId;
+  var target = "paris";
+  if (current.id === target) return current.id;
+  var queue = [{ id: current.id, first: null }];
+  var seen = {};
+  seen[current.id] = true;
+  while (queue.length) {
+    var node = queue.shift();
+    if (node.id === target) {
+      if (node.first && current.neighbors.indexOf(node.first) !== -1) return node.first;
+      return current.id;
+    }
+    var r = regionById(node.id);
+    for (var i = 0; i < r.neighbors.length; i++) {
+      var nb = r.neighbors[i];
+      if (!seen[nb]) {
+        seen[nb] = true;
+        queue.push({ id: nb, first: node.first || nb });
+      }
+    }
+  }
+  return current.id;
+}
+
+function autoResolve(a, b) {
+  function score(army) {
+    return army.composition.infantry * 100 * 1.0 +
+           army.composition.cavalry * 50 * 1.2 +
+           army.composition.artillery * 30 * 1.5;
+  }
+  var aS = score(a) * (0.7 + Math.random() * 0.6);
+  var bS = score(b) * (0.7 + Math.random() * 0.6);
+  var winner = aS >= bS ? a : b;
+  var loser = winner === a ? b : a;
+  var lossFrac = 0.6 + Math.random() * 0.3;
+  loser.composition.infantry = Math.floor(loser.composition.infantry * (1 - lossFrac));
+  loser.composition.cavalry = Math.floor(loser.composition.cavalry * (1 - lossFrac));
+  loser.composition.artillery = Math.floor(loser.composition.artillery * (1 - lossFrac));
+  var winFrac = 0.2 + Math.random() * 0.2;
+  winner.composition.infantry = Math.floor(winner.composition.infantry * (1 - winFrac));
+  winner.composition.cavalry = Math.floor(winner.composition.cavalry * (1 - winFrac));
+  winner.composition.artillery = Math.floor(winner.composition.artillery * (1 - winFrac));
+  if (totalArmyMen(loser) <= 0) {
+    removeArmy(loser);
+  } else {
+    var loserRegion = regionById(loser.regionId);
+    if (loserRegion) {
+      for (var i = 0; i < loserRegion.neighbors.length; i++) {
+        var n = regionById(loserRegion.neighbors[i]);
+        if (n && n.owner === loser.nation) { loser.regionId = n.id; break; }
+      }
+    }
+  }
+  var contested = regionById(winner.regionId);
+  if (contested && contested.owner !== winner.nation && !contested.isCapital) {
+    contested.owner = winner.nation;
+  }
+}
+
+function removeArmy(army) {
+  for (var i = G.armies.length - 1; i >= 0; i--) {
+    if (G.armies[i].id === army.id) { G.armies.splice(i, 1); break; }
+  }
+}
+
+function generateBriefing() {
+  var pg = playerGeneral();
+  var objs = ["rhineland"];
+  if (pg && pg.prestige >= 30) objs.push("hannover");
+  return {
+    name: pg && pg.prestige >= 30 ? "Eastern Offensive" : "Border Campaign",
+    objectiveRegions: objs,
+    budget: 1000 + (pg && pg.prestige >= 30 ? 500 : 0),
+    deadline: 14 + Math.floor(Math.random() * 5)
+  };
+}
+
+function showBriefing() {
+  var b = G.pendingBriefing;
+  if (!b) return;
+  document.getElementById("briefing-title").textContent = b.name;
+  var objNames = b.objectiveRegions.map(function(rid){ return regionById(rid).name; }).join(" and ");
+  document.getElementById("briefing-body").innerHTML =
+    "<p>His Majesty has need of a capable general. Prussian forces grow bold along the eastern frontier.</p>" +
+    "<p>You are to take the field, raise an army from the assigned treasury, and seize <b>" + objNames + "</b> in His Majesty's name.</p>";
+  document.getElementById("briefing-terms").innerHTML =
+    "<div class='row'><span class='lbl'>Objective</span><span class='val'>" + objNames + "</span></div>" +
+    "<div class='row'><span class='lbl'>Budget</span><span class='val'>" + b.budget + " gold</span></div>" +
+    "<div class='row'><span class='lbl'>Deadline</span><span class='val'>" + b.deadline + " weeks</span></div>";
+  document.getElementById("map-overlay").classList.add("show");
+  document.getElementById("briefing-overlay").classList.add("show");
+}
+
+function acceptCampaign() {
+  var b = G.pendingBriefing;
+  if (!b) return;
+  G.pendingBriefing = null;
+  G.campaigns.push({
+    id: nextId(), generalId: G.player,
+    objectiveRegions: b.objectiveRegions, budget: b.budget,
+    deadline: b.deadline, weekAssigned: G.week, yearAssigned: G.year,
+    status: "active", name: b.name
+  });
+  RECRUITMENT.budget = b.budget;
+  RECRUITMENT.infantry = 0;
+  RECRUITMENT.cavalry = 0;
+  RECRUITMENT.artillery = 0;
+  document.getElementById("briefing-overlay").classList.remove("show");
+  setPhase("recruitment");
+}
+
+function declineCampaign() {
+  G.pendingBriefing = null;
+  var pg = playerGeneral();
+  if (pg) pg.crownOpinion = Math.max(0, pg.crownOpinion - 1);
+  document.getElementById("briefing-overlay").classList.remove("show");
+  refreshMapHUD();
+  drawMap();
+}
+
+function takeTheField() {
+  // Place player army at Paris (or current if exists) with the recruited composition
+  var pa = playerArmy();
+  if (pa) {
+    pa.composition.infantry = RECRUITMENT.infantry;
+    pa.composition.cavalry = RECRUITMENT.cavalry;
+    pa.composition.artillery = RECRUITMENT.artillery;
+  } else {
+    G.armies.push({
+      id: nextId(),
+      nation: "france",
+      generalId: G.player,
+      regionId: "paris",
+      composition: {
+        infantry: RECRUITMENT.infantry,
+        cavalry: RECRUITMENT.cavalry,
+        artillery: RECRUITMENT.artillery
+      },
+      moveOrder: null
+    });
+  }
+  setPhase("map");
+}
+
+function triggerBattle(b) {
+  ENEMY_ARMY.infantry = b.enemy.composition.infantry;
+  ENEMY_ARMY.cavalry = b.enemy.composition.cavalry;
+  ENEMY_ARMY.artillery = b.enemy.composition.artillery;
+  ENEMY_ARMY.budget = 0;
+  ENEMY_ARMY.spent = 0;
+  ENEMY_ARMY.intelEstimate = totalArmyMen(b.enemy);
+  RECRUITMENT.infantry = b.player.composition.infantry;
+  RECRUITMENT.cavalry = b.player.composition.cavalry;
+  RECRUITMENT.artillery = b.player.composition.artillery;
+  G.pendingBattle = b;
+  setPhase("battle");
+}
+
+function syncBattleResultToCampaign(winner) {
+  var pSurv = { infantry: 0, cavalry: 0, artillery: 0 };
+  var eSurv = { infantry: 0, cavalry: 0, artillery: 0 };
+  for (var i = 0; i < units.length; i++) {
+    var u = units[i];
+    if (u.state === "destroyed") continue;
+    if (u.team === "blue") pSurv[u.type]++;
+    else eSurv[u.type]++;
+  }
+  var pa = playerArmy();
+  if (pa) {
+    pa.composition.infantry = pSurv.infantry;
+    pa.composition.cavalry = pSurv.cavalry;
+    pa.composition.artillery = pSurv.artillery;
+    if (totalArmyMen(pa) <= 0) removeArmy(pa);
+  }
+  if (G.pendingBattle && G.pendingBattle.enemy) {
+    var ea = G.pendingBattle.enemy;
+    ea.composition.infantry = eSurv.infantry;
+    ea.composition.cavalry = eSurv.cavalry;
+    ea.composition.artillery = eSurv.artillery;
+    if (totalArmyMen(ea) <= 0) removeArmy(ea);
+  }
+  var pg = playerGeneral();
+  if (pg) {
+    pg.notoriety += 1;
+    if (winner === "blue") {
+      pg.prestige += 10;
+      pg.crownOpinion = Math.min(100, pg.crownOpinion + 2);
+      var region = G.pendingBattle ? G.pendingBattle.region : null;
+      if (region && !region.isCapital) region.owner = "france";
+    } else if (winner === "red") {
+      pg.prestige = Math.max(0, pg.prestige - 5);
+      pg.crownOpinion = Math.max(0, pg.crownOpinion - 3);
+    } else {
+      pg.prestige += 2;
+    }
+    GENERAL.prestige = pg.prestige;
+    GENERAL.infamy = pg.infamy;
+    GENERAL.notoriety = pg.notoriety;
+  }
+  G.pendingBattle = null;
+}
+
+// --- Title / map / briefing handlers ---
+document.getElementById("btn-begin-career").addEventListener("click", function() {
+  seedWorld();
+  G.pendingBriefing = generateBriefing();
+  setPhase("map");
+  showBriefing();
+});
+
+document.getElementById("btn-end-week").addEventListener("click", function() { endWeek(); });
+document.getElementById("btn-accept-campaign").addEventListener("click", acceptCampaign);
+document.getElementById("btn-decline-campaign").addEventListener("click", declineCampaign);
+
+// --- Main loop ---
+var lastTime = 0;
+function gameLoop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  var rawDt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  var dt = Math.min(rawDt, 0.05) * simSpeed;
+
+  if (SIM_STATE === "running") {
+    simTime += dt;
+
+    for (var i = 0; i < units.length; i++) {
+      units[i].flashTimer = Math.max(0, units[i].flashTimer - rawDt);
+      updateAI(units[i], dt);
+    }
+
+    updateProjectiles(dt);
+    updateParticles(dt);
+
+    if (simTime > 2) {
+      checkVictory();
+    }
+  }
+
+  draw();
+  updateInfoPanel();
+  updateSummaries();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// --- Boot ---
+window.addEventListener("resize", function() {
+  resize();
+  if (G.phase === "map") { sizeMapCanvas(); drawMap(); }
+});
+
+resize();
+updateGeneralDisplay();
+setPhase("title");
+requestAnimationFrame(gameLoop);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+TRENCH — DESIGN DOCUMENT
+=========================
+A campaign-driven war simulator inspired by Total War and Ultimate General.
+Set in historical 1700s–WW1 Europe. The player is a GENERAL, not a nation.
+
+Last updated: 2026-04-25
+
+
+===============================
+VISION
+===============================
+
+The player takes on the role of a military general serving one of the great
+powers of Europe. You don't control the nation — the crown gives you orders,
+budgets, and campaigns based on how much they trust and value you.
+
+The game sits on two layers:
+  1. STRATEGIC LAYER — A geopolitical map of Europe with regions, nations,
+     armies, and resources. Turn-based, weekly ticks.
+  2. TACTICAL LAYER — Pitched battles (top-down, real-time, pausable).
+     Can be watched or auto-resolved at the player's choice.
+
+The world is dynamic. Other generals and kings make their own decisions.
+Wars break out, campaigns succeed or fail, borders shift — all around you.
+Your career rises or falls based on your performance within that living world.
+
+The focus is on PITCHED BATTLES of the era — massed formations meeting on a
+field — rather than the continuous trench fronts of WW1 (though we may get
+there eventually, hence the name).
+
+
+===============================
+THE PLAYER — A GENERAL'S CAREER
+===============================
+
+You start as a low-ranking officer assigned a small command. Win battles,
+gain recognition, and receive bigger assignments with more troops and more
+important objectives. The crown's faith in you determines what you're given.
+
+RECOGNITION (three-part reputation system):
+
+  PRESTIGE — Military success. Driven by wins and losses, the scale of your
+  victories, and strategic achievements. The core measure of competence.
+
+  INFAMY — How "moral" you are. Determined by treatment of POWs, behavior
+  in occupied territories, treatment of locals and civilian populations.
+  High infamy makes you feared but may cost you allies and crown favor.
+
+  NOTORIETY — The multiplier. How much attention the world pays to you.
+  A famous general's victories (and defeats) echo louder. Every step matters
+  more when everyone is watching.
+
+GENERAL STATS:
+
+  Loyalty     — Devotion to the crown. Loyal generals follow orders even when
+                they're bad. Disloyal ones may refuse campaigns, defect, or
+                worse if powerful enough.
+
+  Happiness   — Personal satisfaction. Affected by pay, quality of commands,
+                troop supply, and whether they feel valued. Unhappy generals
+                perform worse or resign.
+
+  Crown Opinion — How much the king trusts and favors you. Win battles and it
+                rises. Become too famous and independent, it may drop. A king
+                might sideline a brilliant general he doesn't trust.
+
+  Tension: the public loves you (high notoriety + prestige) but the crown
+  gets nervous about your popularity (crown opinion drops). This is literally
+  the Napoleon story — and it can happen to the player.
+
+All AI generals also have these stats. They make decisions based on personality,
+ambition, loyalty, and self-interest.
+
+
+===============================
+TIME SYSTEM
+===============================
+
+The strategic layer runs on WEEKLY TICKS.
+
+  SPRING (March–May) — Campaign season opens. Nations declare intentions,
+  generals receive orders, armies muster and begin marching. Early campaigns
+  try to strike before the enemy is ready.
+
+  SUMMER (June–August) — Peak fighting season. Armies moving, battles
+  happening, this is where the action is densest.
+
+  FALL (September–November) — Late campaigns get risky. Racing against the
+  calendar. Push too far and you're caught in winter far from supply. Smart
+  generals consolidate gains.
+
+  WINTER (December–February) — Armies in winter quarters. Reduced movement,
+  no major campaigns (unless desperate or reckless — and it costs you).
+  Nations recruit, build weapons, negotiate. The player reviews finances,
+  replaces losses, plans for spring. Fast-forward option available.
+
+A year is ~52 weekly ticks. A campaign might last 8–20 weeks depending on
+scale and distance.
+
+
+===============================
+CAMPAIGN SYSTEM
+===============================
+
+A campaign is an attempt to control one or more REGIONS, defined before it
+begins. The crown assigns a campaign to a general based on their recognition
+and crown opinion.
+
+Campaigns can vary in scale:
+  - Small: seize an island, capture a port city
+  - Medium: conquer a province, defend a border
+  - Large: Napoleon-style invasion across multiple regions
+
+The crown provides a BASE BUDGET proportional to the campaign's importance.
+The general then manages that budget — deciding how to spend on recruitment,
+equipment, and supply. You're not funding the invasion of Russia yourself,
+but you decide whether to bring more infantry or more cannon.
+
+Each battle in a campaign has consequences:
+  - Winners hold/take ground, losers retreat
+  - Casualties carry over — no magic refills between battles
+  - Supply lines and distance from home territory matter
+  - Army morale (distinct from unit morale) shifts with wins/losses
+
+Campaign ends when:
+  - Objectives are met (attacker wins)
+  - Attacker is repelled or exhausted (defender wins)
+  - Peace is negotiated
+
+Player can choose to WATCH battles (tactical layer) or AUTO-RESOLVE them.
+
+
+===============================
+ARMY MANAGEMENT & RECRUITMENT
+===============================
+
+When assigned a campaign, the general receives:
+  - A budget (gold) from the crown
+  - Access to the nation's manpower pool
+  - Access to the nation's weapon stockpiles
+
+The general then builds their army:
+
+  RECRUITMENT — Spend gold + manpower to raise units.
+    - Infantry battalion: cheap, needs muskets
+    - Cavalry squadron: moderate cost, needs horses
+    - Artillery battery: expensive, needs cannons
+
+  EQUIPMENT — Units need weapons from the stockpile.
+    - Infantry: 1 musket per man (~100 per battalion)
+    - Cavalry: horses + sabers (some with pistols/carbines)
+    - Artillery: cannons (1-4 per battery) + ammunition
+
+  TRADE-OFFS — More recruits vs better equipment. A large poorly-armed
+  force vs a small elite one. This feeds directly into the battle sim —
+  your pre-battle decisions determine what shows up on the field.
+
+  UPKEEP — Armies cost gold and food per week while active.
+  Underfunded armies suffer desertion and morale loss.
+
+
+===============================
+RESOURCES
+===============================
+
+Four core resources that NATIONS manage (player interacts through budget):
+
+MANPOWER
+  - Population-based; replenishes slowly over time
+  - Recruiting troops depletes the pool
+  - Casualties are gone (dead) or slowly recover (wounded)
+  - Large wars drain nations — pyrrhic victories feel costly
+
+MONEY / GOLD
+  - Funds recruitment, equipment, upkeep, supply
+  - Generated by trade, taxation, controlled regions
+  - Wars are expensive; prolonged campaigns drain the treasury
+  - Running out = attrition, desertion, inability to recruit
+
+FOOD / SUPPLY
+  - Armies need to eat; supply lines from home territory
+  - Foraging possible but limited and harms local relations (infamy)
+  - Armies far from supply take attrition
+  - Sieges and blockades can cut supply to defenders
+
+WEAPONS (Firearms, Cannons, Horses)
+  - Produced over time; require money and industry
+  - Infantry need muskets, cavalry need horses, artillery need cannons
+  - Losing battles means losing equipment
+  - Quality tiers later (smoothbore → rifled → breech-loading)
+
+
+===============================
+STRATEGIC MAP — HISTORICAL EUROPE
+===============================
+
+A simplified but recognizable map of Europe, divided into regions.
+
+Regions:
+  - Have terrain types (plains, mountains, coast, forest)
+  - Produce resources (farmland=food, mines=gold, cities=manpower, industry=weapons)
+  - Contain key locations: capitals, ports, forts, mountain passes
+  - Control of a region = control of its resources
+
+Starting nations (1700s era):
+  - France — large, wealthy, strong army, central position
+  - Great Britain — island, strong navy, colonial wealth
+  - Austria — large but diverse, central European power
+  - Prussia — small but disciplined military, efficient
+  - Russia — vast manpower, harsh terrain, slow to mobilize
+  - Spain — declining but still powerful, colonial holdings
+  - Ottoman Empire — large, different military tradition
+  (Possible additions: Sweden, Netherlands, Poland, minor states)
+
+Each nation has:
+  - Home territory (several regions)
+  - National traits/bonuses (disciplined infantry, strong navy, etc.)
+  - A pool of generals with varying stats and personalities
+  - Diplomatic relations: alliance, neutral, rivalry, war
+  - AI decision-making for wars, campaigns, and resource allocation
+
+
+===============================
+UNIT TYPES
+===============================
+
+Current (v1.1):
+  - Line Infantry — backbone of any army, musket volleys, holds the line
+  - Cavalry — fast, flanking, devastating charges, vulnerable to formed infantry
+  - Artillery — long range, area damage, slow, vulnerable up close
+
+Planned additions:
+  - Light Infantry / Skirmishers — screen ahead of main line, harass, faster
+  - Grenadiers / Elite Infantry — tougher, better morale, expensive
+  - Dragoons — mounted infantry, can dismount to fight on foot
+  - Engineers / Sappers — siege work, field fortifications, bridge building
+  - Generals / Commanders — on-field presence, morale/ability bonuses
+
+Later era units (as tech progresses):
+  - Riflemen — longer range, more accurate, slower rate of fire
+  - Machine guns — devastating defensive firepower
+  - Early tanks — slow, terrifying, unreliable
+
+
+===============================
+BATTLE IMPROVEMENTS (NEAR TERM)
+===============================
+
+Things to add to the tactical battle layer:
+
+- Variable army composition (fed from recruitment, not hardcoded)
+- Unit facing and orientation (matters for flanking)
+- Fatigue system (units tire over long engagements)
+- Weather effects (rain reduces firearm effectiveness, fog limits range)
+- Time of day (night battles, dawn attacks)
+- Field fortifications (infantry can dig in for defense bonus)
+- Commander abilities (rally broken troops, force march, concentrated volley)
+- Multiple battle maps / terrain generation
+- Reserves system (not all units deploy immediately)
+- Supply/ammo — units can run out of ammunition
+- Retreating armies vs routed armies (orderly withdrawal vs panicked flight)
+- Auto-resolve option (calculate result without playing battle)
+
+
+===============================
+ARCHITECTURE
+===============================
+
+Single HTML file. One global game state object (like the hockey sim's G).
+
+Core data structures:
+  - G.nations[]     — all nations with resources, generals, diplomacy
+  - G.regions[]     — map regions with ownership, terrain, production
+  - G.generals[]    — all generals (player is one of these)
+  - G.armies[]      — active armies on the map
+  - G.campaigns[]   — active and completed campaigns
+  - G.player        — reference to the player's general
+  - G.week          — current week number
+  - G.year          — current year
+  - G.season        — spring/summer/fall/winter
+
+Strategic turn flow (per week):
+  1. Collect resources for each nation
+  2. Pay army upkeep
+  3. Check for new wars / peace negotiations
+  4. AI assigns campaigns and generals
+  5. Armies move one region toward objectives
+  6. Check for battle triggers (armies in same region)
+  7. Resolve battles (auto or tactical)
+  8. Update recognition scores
+  9. Check campaign victory conditions
+  10. Advance week, check season transitions
+
+UI views:
+  - Strategic map (main view)
+  - Army management / recruitment
+  - General profile (stats, recognition, career history)
+  - Campaign overview (objectives, progress, army status)
+  - Battle view (existing tactical sim)
+  - Nation overview (resources, wars, diplomacy)
+  - Winter quarters (planning, recruitment, diplomacy)
+
+
+===============================
+DEVELOPMENT PRIORITIES
+===============================
+
+Phase 1 — BATTLES (current)
+  [x] Basic battle sim with infantry, cavalry, artillery
+  [x] Morale and routing
+  [x] Visual effects (smoke, tracers, dust)
+  [x] Terrain (trees, hills with gameplay effects)
+  [x] Battle line formation for infantry
+  [x] Unit labels and detailed results screen
+  [ ] Variable army composition (from recruitment)
+  [ ] Auto-resolve option
+  [ ] More unit behaviors and smarter AI
+  [ ] Fatigue and ammunition
+  [ ] Weather and time of day
+  [ ] Field fortifications
+
+Phase 1.5 — ARMY MANAGEMENT (next)
+  [ ] Army recruitment screen (spend budget on units)
+  [ ] Equipment system (muskets, cannons, horses from stockpile)
+  [ ] Feed custom army into battle sim
+  [ ] General profile with recognition stats
+  [ ] Pre-battle army overview
+
+Phase 2 — CAMPAIGN FRAMEWORK
+  [ ] Simple map of Europe with regions
+  [ ] Nations with resources
+  [ ] Weekly tick system with seasons
+  [ ] Campaign assignment based on recognition
+  [ ] Army movement on map
+  [ ] Battles triggered by army contact
+  [ ] Casualties and supply carry between battles
+  [ ] Auto-resolve for AI campaigns
+
+Phase 3 — DEPTH
+  [ ] Full AI general decision-making (personality-driven)
+  [ ] Diplomacy (alliances, peace treaties, betrayals)
+  [ ] Crown opinion / loyalty / happiness mechanics
+  [ ] Technology progression
+  [ ] More unit types
+  [ ] Naval warfare
+  [ ] Historical scenarios
+  [ ] Player-controlled battles (give orders mode)
