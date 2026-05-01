@@ -10,7 +10,7 @@ The human (Aaron, owner: RAMore94) develops this from a Windows desktop. He uses
 
 ## The 3-agent daily system
 
-A scheduled-routine pipeline runs every day in Anthropic's cloud, handing off via files in `daily-todo/`:
+A 3-agent pipeline runs every day on Aaron's Windows desktop (Task Scheduler invokes `claude -p` against this repo), handing off via files in `daily-todo/`:
 
 | Time (MDT) | Agent    | Reads                                   | Writes                                  |
 |------------|----------|-----------------------------------------|-----------------------------------------|
@@ -18,7 +18,15 @@ A scheduled-routine pipeline runs every day in Anthropic's cloud, handing off vi
 | 11:00 AM   | Executor | today's todo file, trench.html          | edits trench.html, `YYYY-MM-DD-done.md` |
 | 1:00 PM    | Reviewer | today's todo + done + git diff          | auto-fixes trench.html, `…-review.md`   |
 
-Each agent commits and pushes its output. The next agent pulls before starting, so files are the handoff mechanism. **If you commit work outside this pipeline, push it to GitHub** so the next morning's Planner sees it — otherwise it'll get lost when local resets to remote (which has happened).
+Implementation lives in `.agents/`:
+- `.agents/run-agent.ps1` — wrapper that pulls, invokes `claude -p`, then pushes
+- `.agents/{planner,executor,reviewer}.md` — the prompt for each role
+
+Each agent commits its output; the wrapper script handles `git push` afterward. If a day's run is missed (laptop asleep), the next morning's Planner just picks up from the latest commits.
+
+**Earlier history:** A cloud-routine version of this pipeline existed (claude.ai/code/routines) but the cloud sandbox couldn't reach github.com, so all four days of cloud-agent work was lost. The cloud routines are now disabled. If you find yourself in the cloud env and tempted to fix that, don't — the local version supersedes it.
+
+**If you commit work outside this pipeline, push it to GitHub** so the next morning's Planner sees it.
 
 ## Conventions to respect
 
@@ -41,14 +49,14 @@ Then Phase 1 leftovers (auto-resolve UI, fatigue, weather, fortifications) → P
 
 ## If something seems off
 
-- **No `daily-todo/YYYY-MM-DD-todo.md` for today?** The Planner didn't fire or its push failed. Check https://claude.ai/code/routines/ for run status. Don't generate a TODO yourself unless asked.
+- **No `daily-todo/YYYY-MM-DD-todo.md` for today?** Either the laptop was asleep at 7am MDT or the Task Scheduler entry is broken. Check `.agents/logs/` for the most recent run log. Don't generate a TODO yourself unless asked.
 - **Local files don't match GitHub?** Run `git status` and `git log -5` before assuming anything was lost. The human may be mid-edit.
-- **Agent commits missing from GitHub?** Push from the cloud agent likely failed (auth, network). Surface this to the human; do not silently retry from your side.
+- **Agent commits missing from GitHub?** Read the latest `.agents/logs/*.log` for the push step output. The wrapper script always attempts push at the end.
 
 ## Repo info
 
 - GitHub: https://github.com/RAMore94/trench
 - Default branch: `master`
-- The 3 daily routines belong to the human's claude.ai account; they can be viewed/edited at https://claude.ai/code/routines/
+- Local pipeline: `.agents/` directory + 3 Windows Scheduled Tasks (`Trench Planner`, `Trench Executor`, `Trench Reviewer`)
 
-Last updated: 2026-04-27
+Last updated: 2026-05-01

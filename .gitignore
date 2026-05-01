@@ -1,6 +1,9 @@
 # Claude internal
 .claude/
 
+# Local agent run logs (one per role per run; not useful in repo history)
+.agents/logs/
+
 # Python server cache
 __pycache__/
 *.pyc
